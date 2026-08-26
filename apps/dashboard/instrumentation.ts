@@ -36,29 +36,7 @@ export async function register() {
       }
     }
 
-    const dbBackend = process.env.OCTAGON_DB_BACKEND ?? "sqlite";
-    if (dbBackend === "supabase") {
-      const supabaseRequired = [
-        { key: "NEXT_PUBLIC_SUPABASE_URL", description: "Supabase project URL" },
-        { key: "SUPABASE_SERVICE_ROLE_KEY", description: "Supabase service role key" },
-      ];
-      const missingSupabase = supabaseRequired.filter(({ key }) => !process.env[key]);
-      if (missingSupabase.length > 0) {
-        const lines = missingSupabase.map(({ key, description }) => `  • ${key} — ${description}`);
-        console.error([
-          "",
-          "  OCTAGON_DB_BACKEND=supabase but Supabase credentials are missing:",
-          ...lines,
-          "  Add them to Replit Secrets or switch OCTAGON_DB_BACKEND=sqlite for local dev.",
-          "",
-        ].join("\n"));
-        if (process.env.NODE_ENV === "production") {
-          throw new Error(`Supabase backend selected but credentials missing: ${missingSupabase.map((v) => v.key).join(", ")}`);
-        }
-      }
-    }
-
-    console.log(`[instrumentation] DB backend: ${dbBackend}, NODE_ENV: ${process.env.NODE_ENV}`);
+    console.log(`[instrumentation] DB: sqlite (Supabase removed for open-source), NODE_ENV: ${process.env.NODE_ENV}`);
     // ponytail: scheduler removed — hub owns tasks, single cron if needed add when measured
     try { const { getFarmDb } = await import("./lib/farmDb"); getFarmDb(); } catch {}
   }

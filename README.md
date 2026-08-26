@@ -249,7 +249,7 @@ Octagon sees it. The hub knows the phone didn't answer, restarts it, and tries a
 No. Real iPhones on your own Wi-Fi don't need them. That's the point.
 
 **Where is my data?**
-On your Mac. In one file: `infra/db/farm.db`. It never leaves your house unless you turn on Gemini or Stripe.
+On your Mac. In one file: `infra/db/farm.db`. It never leaves your house. Gemini is optional and local — no Supabase, no Stripe, your data stays yours.
 
 **Who is this for?**
 Anyone who posts a lot and is tired of doing it by hand — and doesn't want to risk fake bots or pay $2k a month.

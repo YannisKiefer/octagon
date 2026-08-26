@@ -57,7 +57,7 @@ export default withAuth(
       }
 
       const role = (token.role as string) ?? "viewer";
-      const adminOnlyPaths = ["/api/agents/toggle", "/api/trigger", "/api/farm/tasks", "/api/schedule"];
+      const adminOnlyPaths = ["/api/trigger", "/api/farm/tasks"];
       const isAdminRoute = adminOnlyPaths.some((p) => pathname.startsWith(p));
       if (isAdminRoute && role !== "admin") {
         return NextResponse.json({ error: "Forbidden: admin role required" }, { status: 403 });
@@ -80,8 +80,6 @@ export default withAuth(
           pathname === "/" ||
           pathname.startsWith("/login") || 
           pathname.startsWith("/api/auth/") ||
-          pathname.startsWith("/landing") ||
-          pathname.startsWith("/api/stripe") ||
           pathname.startsWith("/api/health")
         ) {
           return true;

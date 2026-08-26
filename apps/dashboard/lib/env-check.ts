@@ -9,11 +9,6 @@ const REQUIRED_ENV_VARS: { key: string; description: string }[] = [
   { key: "NEXTAUTH_URL", description: "Canonical URL of the dashboard" },
 ];
 
-const SUPABASE_ENV_VARS: { key: string; description: string }[] = [
-  { key: "NEXT_PUBLIC_SUPABASE_URL", description: "Supabase project URL" },
-  { key: "SUPABASE_SERVICE_ROLE_KEY", description: "Supabase service role key" },
-];
-
 function validateEnv(vars: { key: string; description: string }[]): void {
   const missing = vars.filter(({ key }) => !process.env[key]);
   if (missing.length > 0) {
@@ -40,10 +35,6 @@ export function validateCoreEnv(): void {
   validateEnv(REQUIRED_ENV_VARS);
 }
 
-export function validateSupabaseEnv(): void {
-  validateEnv(SUPABASE_ENV_VARS);
-}
-
 export function validateAllEnv(): void {
-  validateEnv([...REQUIRED_ENV_VARS, ...SUPABASE_ENV_VARS]);
+  validateEnv(REQUIRED_ENV_VARS);
 }
