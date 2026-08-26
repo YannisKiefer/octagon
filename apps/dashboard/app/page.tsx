@@ -1,244 +1,257 @@
 "use client";
 import { useState } from "react";
-// ponytail: one page, one chat — phone = agent. No SaaS maze. Grok 1:1, Ralf-style.
 
-const DEVICES = [
-  {id:"phone1", prefix:"Alpha", phone:1, sub:"warmed 3421 swipes · 812 likes"},
-  {id:"phone2", prefix:"Bravo", phone:2, sub:"posting · 654 likes"},
-  {id:"phone3", prefix:"Charlie", phone:3, sub:"idle · 120 likes"},
-  {id:"phone4", prefix:"Delta", phone:4, sub:"warmed 1765 swipes · 432 likes"},
+// 1:1 clone of the reference chat window. Same fonts, colors, rounding, boxes,
+// lines, flows, places. Only the copy is changed to the phone-farm meaning.
+// Each phone is an agent (Hermes Bot). Click a croc -> chat with that phone.
+// Click the screen preview -> open the phone and see what the agent sees.
+
+type Croc = { id: string; name: string; tag?: string; emoji: string; bg: string; preview: string; time: string };
+type Msg = { ts: string; text: string; side: "left" | "right" };
+type Routine = { title: string; schedule: string };
+
+const CROCS: Croc[] = [
+  { id: "phone1", name: "Alpha", tag: "Warmup", emoji: "🤖", bg: "#3a3a3c", preview: "Ran the nightly learn pass and changed the playbook…", time: "Gestern" },
+  { id: "phone2", name: "Bravo", emoji: "⚡", bg: "#7d5cf6", preview: "18 of 18 posted. You didn't touch it.", time: "Gestern" },
+  { id: "phone3", name: "Charlie", emoji: "💤", bg: "#3b82f6", preview: "Idle — tap Start and I warm up for 30 minutes.", time: "Gestern" },
+  { id: "phone4", name: "Delta", emoji: "🔥", bg: "#f59e0b", preview: "Warmup done. Next post slot at 20:27.", time: "Samstag" },
 ];
-const HEALTH: Record<string,{state:string; swipes:number; likes:number; jitter:number}> = {
-  phone1:{state:"warmup", swipes:3421, likes:812, jitter:0.34},
-  phone2:{state:"posting", swipes:2893, likes:654, jitter:0.31},
-  phone3:{state:"idle", swipes:452, likes:120, jitter:0.12},
-  phone4:{state:"warmup", swipes:1765, likes:432, jitter:0.28},
-};
-const EVENTS: Record<string,{ts:string; text:string}[]> = {
-  phone1:[
-    {ts:"Gestern 21:05", text:"US evening: 0 replies. Nothing cleared 12x that was actually our ICP (closest was a Turkish Trendyol tax rant, skipped)."},
-    {ts:"Gestern 21:05", text:"Shipped one original off the unused Drobin angle instead:\nhttps://x.com/yannis1kiefer/status/2092327533945692226"},
-    {ts:"Gestern 23:02", text:"Last hourly: still no gold. Didn't pad. Original already went out this hour so nothing else to ship."},
-    {ts:"Gestern 23:18", text:"Ran the nightly learn pass and this time the numbers were clear enough to actually change the playbook (first accepted edit since Sunday).\n\nHarvested all 41 ships. Replies: median 14 views, best 324. Fillers in dead hours are worth nothing.\n\nTwo changes: zero-gold hour now means no post at all (slot goes to follows), and hunt widened to FR/DE/ES. Cron :17 / 20:27."},
+
+const MESSAGES: Record<string, Msg[]> = {
+  phone1: [
+    { ts: "Gestern 21:05", side: "left", text: "US evening: 0 replies. Nothing cleared 12x that was actually our ICP (closest was a Turkish Trendyol tax rant, skipped)." },
+    { ts: "Gestern 21:05", side: "left", text: "Shipped one original off the unused Drobin angle instead:\nhttps://x.com/yannis1kiefer/status/2092327533945692226" },
+    { ts: "Gestern 23:02", side: "left", text: "Last hourly: still no gold. Didn't pad. Original already went out this hour so nothing else to ship." },
+    { ts: "Gestern 23:18", side: "right", text: "Ran the nightly learn pass and this time the numbers were clear enough to actually change the playbook (first accepted edit since Sunday).\n\nHarvested all 41 ships. Replies: median 14 views, best 324. Originals: median 6 views, best 13. Top 5 posts are all replies, every original is at the bottom.\n\nTwo changes: zero-gold hour now means no post at all (slot goes to follows, likes and harder scouting), and I'm widening the hunt to French/German/Spanish ICP posts.\n\nCron minutes re-rolled too, hourly to :17 and the evening wave to 20:27." },
   ],
-  phone2:[
-    {ts:"Gestern 21:05", text:"Warmup sweep Bravo: 2,893 swipes, 654 likes, jitter 0.31 — healthy. Like rate 22%."},
-    {ts:"Gestern 22:44", text:"Parity check: z-score 0.8 — human. like/save 3.3, no flag."},
-    {ts:"Gestern 23:02", text:"Posting queue: 2 drafts waiting for next Lücke (00:17). Nächster Slot in 14 Min."},
+  phone2: [
+    { ts: "Gestern 21:05", side: "left", text: "Warmup sweep Bravo: 2,893 swipes, 654 likes, jitter 0.31 — healthy. Like rate 22%." },
+    { ts: "Gestern 22:44", side: "left", text: "Parity check: z-score 0.8 — human. Like/save 3.3, no flag." },
+    { ts: "Gestern 23:02", side: "left", text: "Posting queue: 2 drafts waiting for the next open slot (00:17)." },
   ],
-  phone3:[
-    {ts:"Samstag", text:"Idle — no warmup. Tap Start to wake Charlie. Last: 452 swipes, 120 likes. Needs warmup before posting."},
+  phone3: [
+    { ts: "Samstag", side: "left", text: "Idle — no warmup yet. Tap Start and I warm up for 30 minutes. Last run: 452 swipes, 120 likes." },
   ],
-  phone4:[
-    {ts:"Gestern 21:05", text:"Posting Delta: 18 of 18 posted. You didn't touch it."},
-    {ts:"Gestern 21:05", text:"Warmup sweep Delta: 1,765 swipes, 432 likes, jitter 0.28 — healthy"},
-    {ts:"Gestern 23:18", text:"Ran nightly learn — zero-gold hour = no post at all. Hunt widened to FR/DE/ES. Cron :17 / 20:27."},
-  ],
-};
-const ROUTINEN: Record<string,{t:string; s:string}[]> = {
-  phone1:[
-    {t:"X morning trend + drafts", s:"Jeden Tag um 8:27"},
-    {t:"Warmup sweep", s:"Laufend · 3,421 swipes"},
-    {t:"Auto-post", s:"Nächste Lücke 00:17"},
-    {t:"Parity check", s:"Jede Stunde, :17"},
-    {t:"Nightly learn", s:"Jeden Tag um 23:00"},
-  ],
-  phone2:[
-    {t:"Warmup sweep", s:"2 queued"},
-    {t:"X hourly human post", s:"Jede Stunde, 9:17–20:17"},
-    {t:"Parity check", s:"Jede Stunde, :17"},
-  ],
-  phone3:[
-    {t:"Warmup sweep", s:"Idle — Start drücken"},
-    {t:"X midday hijack check", s:"Jeden Tag um 13:14"},
-  ],
-  phone4:[
-    {t:"Warmup sweep", s:"Laufend"},
-    {t:"Auto-post", s:"Nächste Lücke"},
-    {t:"X US-evening reply wave", s:"Jeden Tag um 20:27"},
-    {t:"Nightly learn", s:"23:00"},
+  phone4: [
+    { ts: "Gestern 21:05", side: "left", text: "Posting Delta: 18 of 18 posted. You didn't touch it." },
+    { ts: "Gestern 21:05", side: "left", text: "Warmup sweep Delta: 1,765 swipes, 432 likes, jitter 0.28 — healthy." },
+    { ts: "Gestern 23:18", side: "left", text: "Nightly learn: zero-gold hour now means no post at all. Hunt widened to FR/DE/ES. Cron :17 / 20:27." },
   ],
 };
 
-export default function OctagonGrok(){
+const ROUTINES: Record<string, Routine[]> = {
+  phone1: [
+    { title: "Warmup sweep", schedule: "Jeden Tag um 8:27" },
+    { title: "Auto-post", schedule: "Jede Stunde, 9:17 – 20:17" },
+    { title: "Parity check", schedule: "Jeden Tag um 13:14" },
+    { title: "Nightly learn", schedule: "Jeden Tag um 23:00" },
+  ],
+  phone2: [
+    { title: "Warmup sweep", schedule: "2 queued" },
+    { title: "Auto-post", schedule: "Jede Stunde, 9:17 – 20:17" },
+    { title: "Parity check", schedule: "Jede Stunde, :17" },
+  ],
+  phone3: [
+    { title: "Warmup sweep", schedule: "Idle — Start drücken" },
+    { title: "Midday check", schedule: "Jeden Tag um 13:14" },
+  ],
+  phone4: [
+    { title: "Warmup sweep", schedule: "Laufend" },
+    { title: "Evening post wave", schedule: "Jeden Tag um 20:27" },
+    { title: "Nightly learn", schedule: "Jeden Tag um 23:00" },
+  ],
+};
+
+const HEALTH: Record<string, { state: string; swipes: number }> = {
+  phone1: { state: "warmup", swipes: 3421 },
+  phone2: { state: "posting", swipes: 2893 },
+  phone3: { state: "idle", swipes: 452 },
+  phone4: { state: "warmup", swipes: 1765 },
+};
+
+function ClockIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="shrink-0">
+      <circle cx="10" cy="10" r="8.5" stroke="#30d158" strokeWidth="1.5" />
+      <path d="M10 5.5V10L13 12" stroke="#30d158" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export default function OctagonChat() {
   const [sel, setSel] = useState("phone1");
   const [showPhone, setShowPhone] = useState(false);
-  const cur = DEVICES.find(d=>d.id===sel) || DEVICES[0];
-  const h = HEALTH[sel];
-  const evs = EVENTS[sel] || [];
-  const rous = ROUTINEN[sel] || ROUTINEN.phone1;
-  const active = 3;
+  const croc = CROCS.find(c => c.id === sel) || CROCS[0];
+  const msgs = MESSAGES[sel] || [];
+  const routines = ROUTINES[sel] || [];
+  const health = HEALTH[sel];
+
   return (
-    <div className="flex flex-col h-screen bg-[#010409] text-[#e6edf3] overflow-hidden font-[Inter,ui-sans-serif]">
-      {/* TOP — macOS chrome 1:1 */}
-      <div className="h-[36px] flex items-center justify-between px-3 border-b border-[#21262d] bg-[#0d1117] shrink-0">
-        <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e]" />
-          <span className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123]" />
-          <span className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29]" />
+    <div className="h-screen flex flex-col bg-[#0d0d0f] text-[#f5f5f7] overflow-hidden select-none" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, sans-serif" }}>
+      {/* Titlebar */}
+      <div className="h-[48px] shrink-0 flex items-center justify-between pl-4 pr-4">
+        <div className="flex items-center gap-8">
+          <div className="flex items-center gap-[8px]">
+            <span className="w-[12px] h-[12px] rounded-full bg-[#ff5f57]" />
+            <span className="w-[12px] h-[12px] rounded-full bg-[#febc2e]" />
+            <span className="w-[12px] h-[12px] rounded-full bg-[#28c840]" />
+          </div>
         </div>
-        <button className="w-7 h-7 grid place-items-center text-[#8b949e] text-lg leading-none">+</button>
-        <div className="flex items-center gap-3">
-          <span className="hidden sm:inline text-xs font-mono text-[#8b949e]">octagon — FARM {active}/{DEVICES.length} LIVE</span>
-          <span className="text-[#8b949e]">⚙︎</span>
-          <span className="text-[#8b949e]">»</span>
+        <div className="w-[264px] flex justify-end">
+          <button className="w-[28px] h-[28px] rounded-lg hover:bg-[#1c1c1e] grid place-items-center text-[#98989d] text-xl leading-none">+</button>
+        </div>
+        <div className="flex items-center gap-4 text-[#98989d]">
+          <button className="hover:text-[#f5f5f7]"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+          <button className="hover:text-[#f5f5f7] text-sm tracking-tighter">❯❯</button>
         </div>
       </div>
-      <div className="flex flex-1 overflow-hidden">
-      {/* LEFT */}
-      <aside className="w-[280px] bg-[#0d1117] border-r border-[#21262d] flex flex-col">
-        <div className="px-3 py-3">
-          <div className="relative">
-            <input placeholder="Suchen" className="w-full bg-[#010409] border border-[#30363d] rounded-md pl-8 pr-3 py-1.5 text-sm placeholder:text-[#8b949e] focus:outline-none focus:border-[#8b949e]" />
-            <span className="absolute left-2.5 top-1.5 text-[#8b949e]">⌕</span>
-          </div>
-        </div>
-        <div className="flex-1 overflow-auto px-2 space-y-1">
-          {DEVICES.map(d=>{
-            const hs=HEALTH[d.id];
-            const isSel=d.id===sel;
-            const dot = hs.state==="warmup" ? "bg-emerald-500 animate-pulse" : hs.state==="posting" ? "bg-sky-500 animate-pulse" : hs.state==="idle" ? "bg-[#8b949e]" : "bg-amber-500";
-            return (
-              <button key={d.id} onClick={()=>setSel(d.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-left ${isSel ? "bg-[#161b22] border border-[#30363d]" : "hover:bg-[#161b22] border border-transparent"}`}>
-                <span className={`w-2 h-2 rounded-full ${dot}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium leading-none flex items-center gap-2">
-                    {d.prefix} <span className="text-[11px] px-1.5 py-0.5 rounded bg-[#21262d] text-[#8b949e] font-mono">{d.id}</span>
-                  </div>
-                  <div className="text-xs text-[#8b949e] truncate">{d.sub}</div>
-                </div>
-                <span className="text-[11px] text-[#8b949e] font-mono">{d.id==="phone3"?"Samstag":"Gestern"}</span>
-              </button>
-            );
-          })}
-          <div className="px-3 py-2 text-[11px] font-mono text-[#8b949e] border-t border-[#21262d] mt-2 pt-3">System</div>
-          <div className="flex items-center gap-3 px-3 py-2 text-sm text-[#8b949e]">
-            <span className="w-6 h-6 rounded-full bg-[#21262d] grid place-items-center text-[10px]">◈</span> Health <span className="text-xs ml-auto">Farm 4.2 Active</span>
-          </div>
-          <div className="flex items-center gap-3 px-3 py-2 text-sm text-[#8b949e]">
-            <span className="w-6 h-6 rounded-full bg-[#21262d] grid place-items-center text-[10px]">◈</span> Parity <span className="text-xs ml-auto">{h.jitter} jitter</span>
-          </div>
-        </div>
-        <div className="p-3 border-t border-[#21262d] space-y-2">
-          <button onClick={()=>alert(`Warm ${cur.prefix} for 30m — hub would warm`)} className="w-full bg-[#f85149] text-white rounded-md py-2 text-sm font-bold hover:bg-[#e7463d]">▶ Start farm</button>
-          <button onClick={()=>alert(`Drop video for ${cur.prefix}`)} className="w-full bg-[#21262d] border border-[#30363d] rounded-md py-2 text-sm font-medium">Drop video</button>
-        </div>
-      </aside>
 
-      {/* CENTER */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#010409]">
-        <div className="h-[56px] px-6 flex items-center justify-between border-b border-[#21262d] bg-[#0d1117]">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#21262d] grid place-items-center text-sm">{cur.prefix[0]}</div>
-            <div>
-              <div className="text-sm font-bold leading-none flex items-center gap-2">{cur.prefix} <span className="text-xs font-mono text-[#8b949e]">{cur.id} · 863180542284</span></div>
-              <div className="text-xs font-mono text-[#8b949e]">{h.state} · {h.swipes} swipes · {h.likes} likes</div>
+      <div className="flex flex-1 min-h-0">
+        {/* Sidebar */}
+        <aside className="w-[275px] shrink-0 bg-[#111113] border-r border-[#1c1c1e] flex flex-col">
+          <div className="px-3 pb-2">
+            <div className="relative">
+              <svg className="absolute left-2.5 top-[7px] text-[#636366]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              <input placeholder="Suchen" className="w-full bg-[#1b1b1d] border border-[#2c2c2e] rounded-lg pl-8 pr-3 py-[6px] text-[13px] placeholder:text-[#636366] focus:outline-none focus:border-[#48484a]" />
             </div>
           </div>
-          <div className="text-xs font-mono text-[#8b949e]">Gestern 21:05</div>
-        </div>
 
-        <div className="flex-1 overflow-auto p-6 space-y-4">
-          {evs.map((e,i)=>(
-            <div key={i} className="max-w-[720px]">
-              <div className="text-[11px] font-mono text-[#8b949e] mb-1 ml-1">{e.ts}</div>
-              <div className="rounded-2xl bg-[#21262d] border border-[#30363d] px-4 py-3 text-[14px] leading-relaxed whitespace-pre-wrap">{e.text}</div>
-            </div>
-          ))}
-          <div className="text-center py-3">
-            <span className="text-[11px] font-mono text-[#8b949e] bg-[#0d1117] border border-[#21262d] rounded-full px-3 py-1">Aktualisiert: Routine {cur.prefix} hourly human post</span>
+          <div className="flex-1 overflow-y-auto px-2 space-y-[2px]">
+            {CROCS.map(c => {
+              const isSel = c.id === sel;
+              return (
+                <button key={c.id} onClick={() => setSel(c.id)} className={`w-full flex items-start gap-[10px] px-2 py-[9px] rounded-xl text-left transition-colors ${isSel ? "bg-[#2a2a2c]" : "hover:bg-[#1c1c1e]"}`}>
+                  <span className="w-[36px] h-[36px] rounded-full grid place-items-center text-[17px] shrink-0" style={{ background: c.bg }}>{c.emoji}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="flex items-center gap-[6px]">
+                      <span className="text-[13.5px] font-semibold text-[#f5f5f7] leading-tight">{c.name}</span>
+                      {c.tag && <span className="text-[10.5px] px-[6px] py-[1px] rounded-md bg-[#2c2c2e] text-[#98989d]">{c.tag}</span>}
+                      <span className="ml-auto text-[11px] text-[#636366]">{c.time}</span>
+                    </span>
+                    <span className="block text-[12.5px] text-[#98989d] truncate mt-[2px]">{c.preview}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
-          <div className="max-w-[720px] ml-auto">
-            <div className="rounded-2xl bg-[#1f2937] border border-[#30363d] px-4 py-3 text-[14px] leading-relaxed">
-              Ran the nightly learn pass and this time the numbers were clear enough to actually change the playbook (first accepted edit since Sunday). Two changes applied.
-            </div>
-            <div className="text-[11px] font-mono text-[#8b949e] mt-1 text-right">Gestern 23:18 · Farm</div>
-          </div>
-        </div>
 
-        <div className="p-4 border-t border-[#21262d] bg-[#0d1117]">
-          <div className="flex items-center gap-3 bg-[#010409] border border-[#30363d] rounded-full px-3 py-2">
-            <button className="w-8 h-8 rounded-full bg-[#21262d] grid place-items-center text-[#8b949e]">+</button>
-            <input placeholder={`Nachricht an ${cur.prefix}`} className="flex-1 bg-transparent outline-none text-sm placeholder:text-[#8b949e]" />
-            <button className="w-8 h-8 rounded-full bg-white text-black grid place-items-center">🎤</button>
+          <div className="px-2 pb-3 pt-1 space-y-[2px]">
+            <button className="w-full flex items-center gap-[10px] px-2 py-[8px] rounded-xl hover:bg-[#1c1c1e] text-left">
+              <span className="w-[28px] h-[28px] rounded-full bg-[#2c2c2e] grid place-items-center text-[13px]">⊞</span>
+              <span className="text-[13.5px] font-medium text-[#f5f5f7]">Plugins</span>
+            </button>
+            <button className="w-full flex items-center gap-[10px] px-2 py-[8px] rounded-xl hover:bg-[#1c1c1e] text-left">
+              <span className="w-[28px] h-[28px] rounded-full bg-[#f59e0b] grid place-items-center text-[11px] font-bold text-black">YK</span>
+              <span className="text-[13.5px] font-medium text-[#f5f5f7]">Yannis Kiefer</span>
+            </button>
           </div>
-          <div className="text-[11px] font-mono text-[#8b949e] text-center mt-2">Chat with {cur.prefix} — like OpenClaw agent. Say "warm {cur.prefix.toLowerCase()} 30m" or drop a video.</div>
-        </div>
-      </main>
+        </aside>
 
-      {/* RIGHT */}
-      <aside className="w-[360px] bg-[#0d1117] border-l border-[#21262d] hidden xl:flex flex-col">
-        <div className="h-[56px] px-4 flex items-center justify-between border-b border-[#21262d]">
-          <span className="text-sm font-bold">Bildschirm von {cur.prefix}</span>
-          <span className="text-[#8b949e]">⚙︎</span>
-        </div>
-        <div className="p-4">
-          <button onClick={()=>setShowPhone(true)} className="w-full aspect-[4/3] rounded-xl bg-[#161b22] border border-[#30363d] p-3 flex flex-col hover:border-[#8b949e] transition-colors text-left">
-            <div className="flex-1 grid place-items-center">
-              <div className="text-center">
-                <div className="w-12 h-12 mx-auto rounded-full border-2 border-[#30363d] border-t-white animate-spin mb-3" />
-                <div className="text-xs font-mono text-[#8b949e]">{cur.prefix} · {h.state}</div>
-                <div className="text-[11px] font-mono text-emerald-400 mt-1">{h.swipes} swipes · {h.likes} likes</div>
-                <div className="text-[10px] font-mono text-[#6e7681] mt-2">Click to open phone</div>
-              </div>
+        {/* Chat */}
+        <main className="flex-1 min-w-0 flex flex-col bg-[#0d0d0f]">
+          <div className="h-[52px] shrink-0 flex items-center gap-[10px] px-5">
+            <span className="w-[34px] h-[34px] rounded-full grid place-items-center text-[16px]" style={{ background: croc.bg }}>{croc.emoji}</span>
+            <div className="leading-tight">
+              <div className="text-[14px] font-semibold">{croc.name}</div>
+              <div className="text-[12px] text-[#636366]">863180542284</div>
             </div>
-            <div className="flex gap-2 text-[11px] font-mono">
-              <span className="px-2 py-1 rounded bg-[#21262d] border border-[#30363d]">{h.state}</span>
-              <span className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">jitter {h.jitter}</span>
-            </div>
-          </button>
-          <div className="text-xs font-mono text-[#8b949e] mt-2 text-center">Live preview — real iPhone {cur.id} · Click to see what {cur.prefix} sees</div>
-        </div>
-        <div className="flex-1 overflow-auto px-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-bold">Routinen</span>
-            <button className="text-[#8b949e] text-lg leading-none">+</button>
           </div>
-          <div className="space-y-1">
-            {rous.map(r=>(
-              <div key={r.t} className="flex items-start gap-3 py-2.5 px-2 rounded hover:bg-[#161b22]">
-                <span className="mt-0.5 w-5 h-5 rounded-full border border-emerald-500 text-emerald-500 grid place-items-center text-[11px]">◐</span>
-                <div className="flex-1">
-                  <div className="text-sm font-medium leading-none">{r.t}</div>
-                  <div className="text-xs text-[#8b949e]">{r.s}</div>
+
+          <div className="flex-1 overflow-y-auto px-6 pb-4">
+            {msgs.map((m, i) => (
+              <div key={i} className="mb-4">
+                <div className={`text-[11px] text-[#636366] mb-[6px] ${m.side === "right" ? "text-right pr-1" : "pl-1"}`}>{m.ts}</div>
+                <div className={`max-w-[68%] rounded-[18px] px-[14px] py-[10px] text-[13.5px] leading-[1.5] whitespace-pre-wrap break-words ${m.side === "right" ? "ml-auto bg-[#323236]" : "bg-[#26262a]"}`}>
+                  {m.text.split("\n").map((line, j) =>
+                    /^https?:\/\//.test(line)
+                      ? <span key={j} className="block"><a href={line} target="_blank" className="text-[#4aa3ff] hover:underline">{line}</a></span>
+                      : <span key={j} className="block min-h-[4px]">{line}</span>
+                  )}
                 </div>
               </div>
             ))}
-          </div>
-          <div className="mt-6 p-3 rounded-lg bg-[#161b22] border border-[#30363d]">
-            <div className="text-xs font-mono text-[#8b949e]">Agent {cur.prefix}</div>
-            <div className="text-sm font-bold">{cur.prefix} — {h.state}</div>
-            <div className="text-xs text-[#8b949e] mt-1">Talk to this phone. It works 24/7. Like Hermes/OpenClaw but for your farm.</div>
-            <button onClick={()=>setSel(DEVICES[(DEVICES.findIndex(d=>d.id===sel)+1)%DEVICES.length].id)} className="mt-3 w-full bg-[#21262d] border border-[#30363d] rounded-md py-1.5 text-xs font-medium">Switch to {(DEVICES[(DEVICES.findIndex(d=>d.id===sel)+1)%DEVICES.length].prefix)}</button>
-          </div>
-        </div>
-      </aside>
-
-      {showPhone && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 grid place-items-center p-8" onClick={()=>setShowPhone(false)}>
-          <div className="bg-[#0d1117] border border-[#30363d] rounded-2xl max-w-[360px] w-full overflow-hidden" onClick={e=>e.stopPropagation()}>
-            <div className="h-10 px-4 flex items-center justify-between border-b border-[#21262d]">
-              <span className="text-sm font-bold">{cur.prefix} — {cur.id} screen</span>
-              <button onClick={()=>setShowPhone(false)} className="w-7 h-7 rounded-full bg-[#21262d] grid place-items-center text-[#8b949e]">✕</button>
+            <div className="flex justify-center py-3">
+              <span className="text-[11.5px] text-[#636366] bg-[#1b1b1d] rounded-full px-[12px] py-[5px] inline-flex items-center gap-[6px]">
+                Aktualisiert: Routinen <ClockIconSmall /> und <ClockIconSmall /> {routines[0]?.title ?? "Warmup"}
+              </span>
             </div>
-            <div className="aspect-[9/19.5] bg-[#010409] grid place-items-center p-4">
-              <div className="w-full h-full rounded-[2rem] border-4 border-[#21262d] bg-[#161b22] grid place-items-center">
-                <div className="text-center p-6">
-                  <div className="w-10 h-10 mx-auto rounded-full border-2 border-[#30363d] border-t-white animate-spin mb-3" />
-                  <div className="text-sm font-mono text-white">{cur.prefix} live view</div>
-                  <div className="text-xs font-mono text-[#8b949e] mt-1">{h.state} · {h.swipes} swipes</div>
-                  <div className="text-[11px] font-mono text-emerald-400 mt-3">Hermes has full context — screen, health, events. Ask it anything.</div>
+          </div>
+
+          <div className="px-4 pb-4">
+            <div className="flex items-center gap-3 bg-[#1b1b1d] border border-[#2c2c2e] rounded-full pl-2 pr-2 py-[7px]">
+              <button className="w-[30px] h-[30px] rounded-full bg-[#2c2c2e] grid place-items-center text-[#98989d] hover:text-[#f5f5f7] text-lg leading-none">+</button>
+              <input placeholder={`Nachricht an ${croc.name}`} className="flex-1 bg-transparent outline-none text-[13.5px] placeholder:text-[#636366]" />
+              <button className="w-[30px] h-[30px] rounded-full bg-[#f5f5f7] grid place-items-center text-black">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3z"/><path d="M19 11a1 1 0 1 0-2 0 5 5 0 0 1-10 0 1 1 0 1 0-2 0 7 7 0 0 0 6 6.92V20h-2a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.08A7 7 0 0 0 19 11z"/></svg>
+              </button>
+            </div>
+          </div>
+        </main>
+
+        {/* Right panel */}
+        <aside className="w-[370px] shrink-0 bg-[#111113] border-l border-[#1c1c1e] hidden lg:flex flex-col">
+          <div className="h-[52px] shrink-0" />
+          <div className="px-5 overflow-y-auto">
+            <div className="text-[12.5px] text-[#98989d] text-center mb-2">Bildschirm von {croc.name}</div>
+            <button onClick={() => setShowPhone(true)} className="w-full aspect-[4/3] bg-[#1a1a1c] border border-[#2c2c2e] rounded-xl grid place-items-center hover:border-[#48484a] transition-colors">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 rounded-full border-[2.5px] border-[#3a3a3c] border-t-[#98989d] animate-spin" />
+                <div className="text-[11px] text-[#636366]">{croc.name} · {health.state}</div>
+              </div>
+            </button>
+
+            <div className="flex items-center justify-between mt-6 mb-2">
+              <span className="text-[15px] font-semibold">Routinen</span>
+              <button className="w-[26px] h-[26px] rounded-lg hover:bg-[#1c1c1e] grid place-items-center text-[#98989d] text-lg leading-none">+</button>
+            </div>
+            <div className="space-y-[6px] pb-6">
+              {routines.map(r => (
+                <div key={r.title} className="flex items-center gap-[10px] px-2 py-[7px] rounded-lg hover:bg-[#1c1c1e]">
+                  <ClockIcon />
+                  <div className="leading-tight">
+                    <div className="text-[13.5px] font-medium">{r.title}</div>
+                    <div className="text-[12px] text-[#98989d]">{r.schedule}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      {/* Phone modal — click the screen, see what the agent sees */}
+      {showPhone && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-[2px] z-50 grid place-items-center" onClick={() => setShowPhone(false)}>
+          <div className="w-[340px] bg-[#111113] border border-[#2c2c2e] rounded-[28px] overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="h-[44px] flex items-center justify-between px-4 border-b border-[#1c1c1e]">
+              <span className="text-[13px] font-semibold">{croc.name} — was es gerade sieht</span>
+              <button onClick={() => setShowPhone(false)} className="w-[24px] h-[24px] rounded-full bg-[#2c2c2e] grid place-items-center text-[#98989d] text-[11px]">✕</button>
+            </div>
+            <div className="p-4">
+              <div className="aspect-[9/18] bg-[#0a0a0b] rounded-[20px] border-[3px] border-[#2c2c2e] grid place-items-center">
+                <div className="flex flex-col items-center gap-3 px-6 text-center">
+                  <div className="w-9 h-9 rounded-full border-[2.5px] border-[#3a3a3c] border-t-[#98989d] animate-spin" />
+                  <div className="text-[13px] font-medium">{croc.name} live view</div>
+                  <div className="text-[11.5px] text-[#98989d]">{health.state} · {health.swipes.toLocaleString("de-DE")} Swipes</div>
+                  <div className="text-[11px] text-[#30d158]">Voller Kontext — Screen, Health, Events. Frag alles.</div>
                 </div>
               </div>
             </div>
-            <div className="p-3 border-t border-[#21262d] flex gap-2">
-              <button onClick={()=>{setShowPhone(false); alert(`Hermes: what do you want ${cur.prefix} to do?`);}} className="flex-1 bg-[#f85149] text-white rounded-md py-2 text-sm font-bold">Talk to {cur.prefix}</button>
-              <button onClick={()=>setShowPhone(false)} className="px-4 bg-[#21262d] border border-[#30363d] rounded-md text-sm">Close</button>
+            <div className="px-4 pb-4 flex gap-2">
+              <button onClick={() => setShowPhone(false)} className="flex-1 bg-[#2c2c2e] hover:bg-[#3a3a3c] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors">Schließen</button>
             </div>
           </div>
         </div>
       )}
-      </div>
     </div>
+  );
+}
+
+function ClockIconSmall() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 20 20" fill="none" className="inline">
+      <circle cx="10" cy="10" r="8.5" stroke="#636366" strokeWidth="2" />
+      <path d="M10 5.5V10L13 12" stroke="#636366" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   );
 }
