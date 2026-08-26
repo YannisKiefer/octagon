@@ -69,17 +69,24 @@ export default function OctagonGrok(){
   const rous = ROUTINEN[sel] || ROUTINEN.phone1;
   const active = 3;
   return (
-    <div className="flex h-screen bg-[#010409] text-[#e6edf3] overflow-hidden font-[Inter,ui-sans-serif]">
+    <div className="flex flex-col h-screen bg-[#010409] text-[#e6edf3] overflow-hidden font-[Inter,ui-sans-serif]">
+      {/* TOP — macOS chrome 1:1 */}
+      <div className="h-[36px] flex items-center justify-between px-3 border-b border-[#21262d] bg-[#0d1117] shrink-0">
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e]" />
+          <span className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123]" />
+          <span className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29]" />
+        </div>
+        <button className="w-7 h-7 grid place-items-center text-[#8b949e] text-lg leading-none">+</button>
+        <div className="flex items-center gap-3">
+          <span className="hidden sm:inline text-xs font-mono text-[#8b949e]">octagon — FARM {active}/{DEVICES.length} LIVE</span>
+          <span className="text-[#8b949e]">⚙︎</span>
+          <span className="text-[#8b949e]">»</span>
+        </div>
+      </div>
+      <div className="flex flex-1 overflow-hidden">
       {/* LEFT */}
       <aside className="w-[280px] bg-[#0d1117] border-r border-[#21262d] flex flex-col">
-        <div className="h-[56px] px-4 flex items-center justify-between border-b border-[#21262d]">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#f85149] inline-block" />
-            <span className="font-mono font-bold text-sm tracking-tight">octagon</span>
-            <span className="text-[10px] text-[#8b949e] font-mono">FARM {active}/{DEVICES.length} LIVE</span>
-          </div>
-          <div className="w-7 h-7 rounded-full bg-[#21262d] grid place-items-center text-[10px] font-bold">YK</div>
-        </div>
         <div className="px-3 py-3">
           <div className="relative">
             <input placeholder="Suchen" className="w-full bg-[#010409] border border-[#30363d] rounded-md pl-8 pr-3 py-1.5 text-sm placeholder:text-[#8b949e] focus:outline-none focus:border-[#8b949e]" />
@@ -231,6 +238,7 @@ export default function OctagonGrok(){
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
