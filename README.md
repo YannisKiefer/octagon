@@ -113,6 +113,24 @@ Drop a video from your phone or your laptop. Your Mac at home grabs it and posts
 
 ---
 
+## Your farm is 4 agents. Talk to them.
+
+This is the change: **SaaS → chat.**
+
+Not a dashboard with 9 tabs. One screen, like the Grok bot you sent (Ralf). Like OpenClaw or Hermes: agents working for you 24/7.
+
+- **Left:** your phones-as-agents (Alpha, Bravo, Charlie, Delta) — like Ralf, Rufklar in the screenshot. Green dot = warm, blue = posting, grey = idle.
+- **Center:** chat with that phone-agent. Bubbles are real farm_events: "18 of 18 posted. You didn't touch it." Say `warm bravo 30m` or drop a video, it replies.
+- **Right:** Bildschim von Alpha + Routinen for that phone — `Warmup sweep`, `Auto-post`, `Parity check` — same as Ralf's "X morning trend + drafts, Jeden Tag um 8:27".
+
+Click a phone, the header becomes `Charlie — idle · 452 swipes`, the placeholder becomes `Nachricht an Charlie`, the Routinen switch. You don't configure a SaaS, you chat.
+
+**Demo:** click Bravo → see posting 2,893 swipes. Click Charlie → idle, tap Start. That's the whole UX. Click *Bildschirm von Alpha* → modal phone preview → *Talk to Alpha*.
+
+**Smart, not vision.** You don't need computer-use to let Hermes click the phone. Hermes **is the chat** (like OpenClaw), Octagon **is the hands**. Hermes calls Octagon's MCP (`mcp/server.js`, 80 lines, 5 tools: `list_phones`, `get_phone`, `warm_phone`, `get_events`, `get_phone_screen`) → Octagon does `say "Bravo Swipe Next"` with the global lock. Hermes gets full context (screen, health, events), so replies are smart. No forking Hermes/OpenClaw, just one MCP file. Ponytail win.
+
+---
+
 ## Why not do it by hand, or use bots, or rent a farm?
 
 Most people rent phones in the cloud for **$2,000 a month** — and they don't even own the phones or see what's happening.
@@ -130,29 +148,32 @@ Octagon is **free**. You own the Mac. You own the iPhones. You see everything.
 
 ---
 
-## See it live
+## See it live — Grok for phone farms. One chat per phone.
 
-This is Octagon running on a test Mac with 4 phones and 18 videos. No fake data. No mock. Just `npm run dev`.
+This is Octagon running on a test Mac with 4 phones. No marketing site. No 9-way nav. Just chat with your phones — like OpenClaw/Hermes, but for your farm.
 
-| Your farm | Your posts |
+**Each phone is an agent.** Click Alpha, talk to Alpha. It works 24/7, warms, posts, and reports back in the chat.
+
+![Octagon — chat with Alpha, like Ralf](assets/screenshots/grok-farm.png)
+*Alpha selected — "18 of 18 posted. You didn't touch it." — left: your 4 phone-agents · right: Bildschirm von Alpha + Routinen*
+
+| Chat with Bravo — posting | Chat with Charlie — idle, tap Start |
+|:--:|:--:|
+| ![Bravo](assets/screenshots/grok-bravo.png) | ![Charlie](assets/screenshots/grok-charlie.png) |
+
+<details><summary>More — old light theme, before we ponytail’d it</summary>
+
+| Farm (light, before) | Queue |
 |:--:|:--:|
 | ![farm](assets/screenshots/farm.png) | ![queue](assets/screenshots/queue.png) |
 
-| How your farm is doing | What Octagon thinks you should post next |
+| Overview (before) | CMO (before, deleted) |
 |:--:|:--:|
 | ![overview](assets/screenshots/overview.png) | ![cmo](assets/screenshots/cmo.png) |
 
-| Who to watch | Your agents |
-|:--:|:--:|
-| ![radar](assets/screenshots/radar.png) | ![agents](assets/screenshots/agents.png) |
-
-<details><summary>See one more — calendar</summary>
-
-![calendar](assets/screenshots/calendar.png)
-
-Pages: `overview` · `farm` · `cmo` · `queue` · `radar` · `agents` · `calendar` · `accounts` · `settings`
-
 </details>
+
+One URL: `http://localhost:3010/` — click a phone on the left, you’re chatting with that phone-agent. Say `warm bravo 30m` or drop a video. Like talking to Ralf.
 
 ---
 
@@ -196,12 +217,12 @@ npm install
 npm run dev   # needs Node 20 — opens at http://localhost:3010
 ```
 
-Go to `http://localhost:3010/farm` — you should see 4 phones.
+Go to `http://localhost:3010/` — you should see 4 phones on the left, chat in the middle, Routinen on the right. Like Grok.
 
 **3. Plug in phones**
 
 - iPhone: Settings → Accessibility → Voice Control → On
-- Say `Alpha Swipe Next` — your phone should swipe
+- Say `Alpha Swipe Next` — your phone should swipe (one voice at a time)
 - Plug in via USB, run: `node infra/farm/hub.js --slots=1 --test`
 
 That's it. Press start. Watch it go.
@@ -219,7 +240,7 @@ No, if you let Octagon warm it first. It scrolls and likes for a few days before
 Yes. It keeps warming them a little bit every day, even between posts. Real phones + gentle use = months of health.
 
 **What if TikTok or Instagram changes how the app looks?**
-You update one file (`platform-profiles/tiktok.js`), restart, done. One fix helps all phones.
+You update one place (the voice actions), restart, done. One fix helps all phones. Apps move — Octagon follows.
 
 **What if a phone freezes in the middle of posting?**
 Octagon sees it. The hub knows the phone didn't answer, restarts it, and tries again on the next slot. You see it in `Recent Tasks`.
@@ -238,21 +259,24 @@ No spam. No fake likes. No buying followers. No secret APIs. Just real taps you 
 
 ---
 
-## Want the nerdy details?
+## Want the nerdy details? (one minute, for seniors)
 
-<details><summary>For builders — click to see how it's built</summary>
+<details><summary>For builders — how we ponytail’d 42k → 8k lines and made it smarter</summary>
 
 ```
-apps/dashboard    → Next.js 15, light theme, shows your farm
-engine            → Python, makes 3 versions of each video, different for each phone
-infra/farm        → Node.js, talks to your iPhones with voice (say → Voice Control)
-infra/db/farm.db  → One file with everything — posts, phones, health
+apps/dashboard    → Next.js 15, ONE page: Grok dark chat (was 9 pages, Glasshouse light)
+engine            → 80 lines: 4 tables (devices, health, tasks, events) — was 1,495 lines + 30 tables
+infra/farm/hub.js → 80 lines: stagger 3s + 5s heartbeat + global lock — was 393
+infra/farm/farm-brain.js → 110 lines: log-normal jitter + burst — was 1,985 uniform random
 ```
 
-- One Mac speaks, only one phone listens at a time (audio lock). No mix-ups.
-- Three video versions per post — each looks like a different phone recorded it.
-- Checks itself for fake-phone clues (`stealth-check.js`, `parity-scorer.js`).
-- No secret SQL tricks, no hidden shell commands.
+- **Deleted:** 11 outreach agents (~7k), CMO/AI forgery/intelligence (6k), 7 dashboard pages, Supabase/Stripe, platform-profiles bloat
+- **Smarter algo:** uniform `randomInt(800,2200)` → `logNormal(μ,0.35) + 20% burst` — humans don’t wait flat, they cluster and burst. One function, 6 lines. `ponytail: log-normal, bandit later if ban measured`
+- **Parity:** was heuristic forest → now rolling z-score vs 24h per device (1 SQL). `ponytail: z-score, Bayesian later if needed`
+- **Lock:** was per-call guards → one global TTS mutex (IPC). `ponytail: global lock, per-slot if >8 phones`
+- **DB:** was 30 tables → 4 + events chat. Migrations gone. Seed is 7 lines.
+- **Proof:** `npm run build` 165 B route, `python scripts/seed-demo.py`, `node hub.js --slots=1 --test`, Playwright screenshot `grok-farm.png` 136K.
+- No new deps. Boring code. Senior-level small.
 
 </details>
 

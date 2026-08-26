@@ -213,3 +213,12 @@ export function listFarmTasks(fromIso?: string, toIso?: string): FarmTask[] {
   }
   return db.prepare("SELECT * FROM farm_tasks ORDER BY scheduled_for ASC LIMIT 500").all() as FarmTask[];
 }
+
+export type FarmEvent = { id: string; ts: string; level: string; device_id: string | null; task_id: string | null; event: string; data: string };
+export function listFarmEvents(limit = 50): FarmEvent[] {
+  try {
+    return getFarmDb({ readonly: true }).prepare("SELECT * FROM farm_events ORDER BY ts DESC LIMIT ?").all(limit) as FarmEvent[];
+  } catch {
+    return [];
+  }
+}

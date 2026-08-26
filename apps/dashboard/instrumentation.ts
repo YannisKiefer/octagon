@@ -59,9 +59,7 @@ export async function register() {
     }
 
     console.log(`[instrumentation] DB backend: ${dbBackend}, NODE_ENV: ${process.env.NODE_ENV}`);
-
-    // Boot singleton services
-    const { startScheduler } = await import("./lib/scheduler");
-    await startScheduler();
+    // ponytail: scheduler removed — hub owns tasks, single cron if needed add when measured
+    try { const { getFarmDb } = await import("./lib/farmDb"); getFarmDb(); } catch {}
   }
 }

@@ -1,106 +1,49 @@
-"""
-Phone Farm OS — Demo Seeder
-Creates a fresh infra/db/farm.db with synthetic demo data so screenshots pop
-without any private or scraped content. Safe to run repeatedly.
-
-Usage:
-  python scripts/seed-demo.py
-  # or from repo root:
-  pip install -r engine/requirements.txt && python scripts/seed-demo.py
-"""
-import sys
+"""Octagon — minimal farm seeder. 4 tables only."""
+import sys, sqlite3, uuid, random
 from pathlib import Path
+from datetime import datetime, timezone, timedelta
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "engine"))
-
-import json, random, sqlite3
-from datetime import datetime, timezone, timedelta
-from octragon.db import OctragonDB
+sys.path.insert(0, str(ROOT/"engine"))
+from octragon.db import OctagonDB
 
 def main():
-    db_path = ROOT / "infra" / "db" / "farm.db"
-    if db_path.exists():
-        print(f"→ removing old {db_path}")
-        db_path.unlink()
-        for ext in ("-shm", "-wal"):
-            p = Path(str(db_path) + ext)
-            if p.exists():
-                p.unlink()
-    db = OctragonDB(db_path)
-    print(f"✓ DB initialized at {db_path}")
+    p = ROOT/"infra"/"db"/"farm.db"
+    for e in ("","-shm","-wal"):
+        try: (Path(str(p)+e) if e else p).unlink()
+        except: pass
+    OctagonDB(p)
+    print(f"✓ {p} ready")
+    db=sqlite3.connect(p)
+    now=datetime.now(timezone.utc)
+    iso=lambda d: d.isoformat()
 
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
-    now = datetime.now(timezone.utc).isoformat()
+    # health — 3 live, 1 idle
+    for did,usb,st,sw,li in [("phone1",1,"warmup",3421,812),("phone2",1,"posting",2893,654),("phone3",0,"idle",452,120),("phone4",1,"warmup",1765,432)]:
+        db.execute("UPDATE farm_device_health SET usb_connected=?,session_state=?,swipes=?,likes=?,last_action=?,last_action_at=?,updated_at=? WHERE device_id=?",
+                   (usb,st,sw,li,"Swipe Next",iso(now),iso(now),did))
 
-    # — farm health (so /farm looks alive) —
-    demo_health = [
-        ("phone1", 1, "warmup", 3421, 812, 234, 89, 12, "Swipe Next"),
-        ("phone2", 1, "scraping", 2893, 654, 198, 67, 9, "Like Post"),
-        ("phone3", 0, "idle", 452, 120, 45, 12, 3, "Save Post"),
-        ("phone4", 1, "posting", 1765, 432, 98, 34, 7, "Open Comments"),
+    # tasks
+    for tid,typ,dev,stat in [("task_warmup_1","warmup","phone1","running"),("task_post_2","post","phone2","scheduled"),("task_warmup_3","warmup","phone4","scheduled"),("task_audit_1","audit",None,"succeeded")]:
+        db.execute("INSERT OR REPLACE INTO farm_tasks (id,type,device_id,scheduled_for,status,payload,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)",
+                   (tid,typ,dev,iso(now),stat,'{}',iso(now),iso(now)))
+
+    # events — grok-style chat bubbles
+    evts=[
+        ("US evening: 0 replies. Nothing cleared 12x that was actually our ICP (closest was a Turkish Trendyol tax rant, skipped).","phone1"),
+        ("Shipped one original off the unused Drobin angle instead: https://x.com/yannis1kiefer/status/2092327","phone1"),
+        ("Last hourly: still no gold. Didn't pad. Original already went out this hour so nothing else to ship.","phone2"),
+        ("Ran the nightly learn pass — numbers clear enough to change playbook. Harvested all 41 ships. Replies: median 14 views, best 324. Fillers in dead hours are worth nothing. Two changes: zero-gold hour = no post at all.","phone4"),
+        ("Cron minutes re-rolled too, hourly to :17 and the evening wave to 20:27.","phone4"),
+        ("Warmup sweep Alpha: 3421 swipes, 812 likes, jitter 0.34 — healthy","phone1"),
+        ("Posting Delta: 18 of 18 posted. You didn't touch it.","phone4"),
     ]
-    for device_id, usb, state, swipes, likes, saves, comments, profiles, last in demo_health:
-        conn.execute("UPDATE farm_device_health SET usb_connected=?, session_state=?, swipes=?, likes=?, saves=?, comments=?, profiles=?, last_action=?, last_action_at=?, updated_at=? WHERE device_id=?",
-                     (usb, state, swipes, likes, saves, comments, profiles, last, now, now, device_id))
+    for i,(msg,did) in enumerate(evts):
+        ts=now - timedelta(hours=len(evts)-i, minutes=random.randint(0,50))
+        db.execute("INSERT OR REPLACE INTO farm_events (id,ts,level,device_id,event,data) VALUES (?,?,?,?,?,?)",
+                   (f"evt{i:02d}", iso(ts), "info", did, msg, "{}"))
+    db.commit()
+    print(f"✓ seeded {db.execute('SELECT COUNT(*) FROM farm_devices').fetchone()[0]} devices, {db.execute('SELECT COUNT(*) FROM farm_events').fetchone()[0]} events")
+    db.close()
 
-    tasks = [
-        ("task_warmup_1", "warmup", "phone1", "running", '{"duration_minutes": 30, "platform": "tiktok"}'),
-        ("task_scout_1", "scout", "phone2", "scheduled", '{"max_videos": 20, "niche": "ecom"}'),
-        ("task_post_1", "post", "phone4", "scheduled", '{"platform": "instagram"}'),
-        ("task_audit_1", "audit", None, "succeeded", '{"check_jitter": true}'),
-    ]
-    for tid, typ, dev, status, payload in tasks:
-        conn.execute("INSERT OR REPLACE INTO farm_tasks (id, type, device_id, scheduled_for, status, payload, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                     (tid, typ, dev, now, status, payload, now, now))
-
-    accounts = [
-        ("acc_ecom_tt_1", 1, "tiktok", "@trendlab", "ecom", "TrendLab", 45200),
-        ("acc_ai_tt_1", 2, "tiktok", "@aibuilder", "ai", "AI Builder", 89200),
-        ("acc_biz_ig_1", 3, "instagram", "@founderflow", "business", "Founder Flow", 23100),
-        ("acc_life_yt_1", 4, "youtube", "@mindfuel", "lifestyle", "MindFuel", 156000),
-    ]
-    for aid, phone, plat, handle, niche, display, followers in accounts:
-        conn.execute("INSERT OR REPLACE INTO accounts (id, phone_number, platform, handle, niche, display_name, follower_count, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)",
-                     (aid, phone, plat, handle, niche, display, followers, now))
-
-    captions = [
-        "This one trick doubled our store conversion overnight...",
-        "POV: you stopped overthinking and just shipped",
-        "The hook that made this video hit 2.4M views",
-        "I tested 30 ad creatives so you don't have to",
-        "5am routine that actually sticks (no cold plunges)",
-        "Behind the scenes: how we pack 500 orders/day",
-    ]
-    platforms = ["tiktok", "instagram", "youtube"]
-    creators = ["@viralchef", "@buildinpublic", "@aestheticlab", "@growthguy", "@mindsetdaily", "@shopwins"]
-    for i in range(18):
-        cid = f"scraped_{i+1:03d}"
-        plat = random.choice(platforms)
-        creator = random.choice(creators)
-        caption = random.choice(captions)
-        views = random.randint(15000, 2800000)
-        likes = int(views * random.uniform(0.04, 0.12))
-        comments = int(views * random.uniform(0.003, 0.015))
-        shares = int(views * random.uniform(0.002, 0.01))
-        niche = random.choice(["ecom", "ai", "business", "lifestyle"])
-        phone = random.randint(1,4)
-        status = random.choice(["pending","pending","downloaded","ready"])
-        created = (datetime.now(timezone.utc) - timedelta(hours=random.randint(1,72))).isoformat()
-        conn.execute("INSERT OR REPLACE INTO scraped_content (id, source_url, source_platform, source_creator, caption, hashtags, duration_seconds, resolution, engagement_likes, engagement_comments, engagement_shares, engagement_views, target_niche, target_phone, scrape_status, scraped_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                     (cid, f"https://{plat}.com/video/{cid}", plat, creator, caption, '["fyp","viral","business"]', random.randint(12,45), "1080x1920", likes, comments, shares, views, niche, phone, status, created, created))
-    for i in range(6):
-        scid = f"scraped_{i+1:03d}"
-        for vi in range(3):
-            var_id = f"var_{scid}_{vi}"
-            status = random.choice(["pending","cleansed","ready"])
-            params = json.dumps({"fps": 30, "crf": 22, "preset": "fast"})
-            conn.execute("INSERT OR REPLACE INTO video_variations (id, scraped_content_id, variation_index, video_path, forge_params, cleanse_status, metadata_injected, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                         (var_id, scid, vi, f"/videos/{var_id}.mp4", params, status, random.randint(0,1), now))
-    conn.commit()
-    print("✓ demo seeded: 4 devices, 18 scraped, 18 variations")
-    conn.close()
-
-if __name__ == "__main__":
-    main()
+if __name__=="__main__": main()
