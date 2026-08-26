@@ -56,6 +56,7 @@ function getFarmDbRW(): Database.Database {
   if (!_dbRW) {
     _dbRW = new Database(DB_PATH, { readonly: false });
     _dbRW.pragma("journal_mode = WAL");
+    _dbRW.pragma("busy_timeout = 5000"); // ponytail: 5s, fixes SQLITE_BUSY on 4-phone concurrent
     ensureFarmSchema(_dbRW);
     seedFarmDevicesIfEmpty(_dbRW);
   }

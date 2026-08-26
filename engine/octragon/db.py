@@ -21,6 +21,7 @@ class OctagonDB:
 
     def _init_db(self):
         self.conn.execute("PRAGMA journal_mode=WAL")
+        self.conn.execute("PRAGMA busy_timeout=5000")  # ponytail: 5s, fixes concurrent hub+brain+MCP
         self.conn.execute("PRAGMA foreign_keys=ON")
         self._create_tables()
         logger.info("[DB] farm.db ready")

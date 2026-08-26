@@ -20,7 +20,7 @@ const SLOT = args.slot || "1";
 const PREFIX = args.prefix || "Alpha";
 const PLATFORM = args.platform || "tiktok";
 const ID = args.id || `phone${SLOT}`;
-const DURATION = parseInt(args.duration||"10",10);
+const DURATION = parseFloat(args.duration||"10"); // ponytail: parseFloat, 0.5m test works
 const DRY = args["dry-run"] || args.test;
 const LOG = !!args.log;
 

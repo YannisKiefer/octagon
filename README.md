@@ -275,10 +275,12 @@ infra/farm/farm-brain.js → 110 lines: log-normal jitter + burst — was 1,985 
 - **Parity:** was heuristic forest → now rolling z-score vs 24h per device (1 SQL). `ponytail: z-score, Bayesian later if needed`
 - **Lock:** was per-call guards → one global TTS mutex (IPC). `ponytail: global lock, per-slot if >8 phones`
 - **DB:** was 30 tables → 4 + events chat. Migrations gone. Seed is 7 lines.
-- **Proof:** `npm run build` 165 B route, `python scripts/seed-demo.py`, `node hub.js --slots=1 --test`, Playwright screenshot `grok-farm.png` 136K.
+- **Proof:** `npm run build` 3.9kB / (client per-phone), `python scripts/seed-demo.py`, `node hub.js --slots=1 --test`, Playwright `grok-farm.png` 193K + `grok-bravo` 145K + `grok-phone-modal` 162K (click Bildschirm).
 - No new deps. Boring code. Senior-level small.
 
 </details>
+
+![Architecture — Hermes is the chat, Octagon is the hands](assets/architecture.svg)
 
 ---
 

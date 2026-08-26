@@ -7,7 +7,7 @@ const Database = require('better-sqlite3');
 
 const getArg = (n,d)=>{const m=process.argv.slice(2).find(a=>a.startsWith(`--${n}=`)); return m?m.split("=")[1]:d};
 const SLOTS = parseInt(getArg('slots','4'),10);
-const DUR = parseInt(getArg('duration','60'),10);
+const DUR = parseFloat(getArg('duration','60')); // ponytail: float for quick test
 const TEST = process.argv.includes('--test');
 const DB_PATH = path.join(__dirname, '..', 'db', 'farm.db'); // ponytail: 4 tables, no supabase
 const WORKER = path.join(__dirname, 'farm-brain.js');
@@ -51,8 +51,10 @@ function health(){
       else if(miss>=3 && w.status!=='degraded'){ w.status='degraded'; log(`S${slot} degraded`); }
     }
     try{
-      const db=new Database(DB_PATH); db.exec(`CREATE TABLE IF NOT EXISTS hub_status(id TEXT PRIMARY KEY, active INTEGER, locked INTEGER, ts TEXT)`);
-      const active=Object.values(workers).filter(w=>w.status==='active').length;
+      const db=new Database(DB_PATH);
+      // ponytail: handle drift from old 8-col schema → drop and recreate once
+      try{ const cols=db.prepare("PRAGMA table_info(hub_status)").all().map(c=>c.name); if(cols.length && !cols.includes("active")) db.exec("DROP TABLE hub_status"); }catch{}
+      db.exec(`CREATE TABLE IF NOT EXISTS hub_status(id TEXT PRIMARY KEY, active INTEGER, locked INTEGER, ts TEXT)`);
       db.prepare(`INSERT INTO hub_status(id,active,locked,ts) VALUES('hub',?,?,?) ON CONFLICT(id) DO UPDATE SET active=excluded.active, locked=excluded.locked, ts=excluded.ts`).run(active, locked?1:0, new Date().toISOString()); db.close();
     }catch{}
   },5000);

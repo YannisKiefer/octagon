@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="340" viewBox="0 0 1000 340">
+  <rect width="1000" height="340" fill="#0d1117" rx="16"/>
+  <text x="500" y="28" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="11" fill="#8b949e" letter-spacing="2">OCTAGON — CROCKBOT ARCHITECTURE · PHONE = AGENT · CHAT = INTERFACE</text>
+  <!-- User -->
+  <g transform="translate(40,60)">
+    <rect width="140" height="80" rx="12" fill="#161b22" stroke="#30363d"/>
+    <text x="70" y="32" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="700" fill="#e6edf3">You</text>
+    <text x="70" y="52" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#8b949e">WhatsApp-like</text>
+    <text x="70" y="66" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#8b949e">left: Alpha…</text>
+  </g>
+  <text x="180" y="108" font-family="ui-monospace,Menlo,monospace" font-size="16" fill="#f85149">→</text>
+  <!-- Hermes -->
+  <g transform="translate(200,60)">
+    <rect width="160" height="80" rx="12" fill="#1f2937" stroke="#f85149" stroke-width="1.5"/>
+    <text x="80" y="28" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="700" fill="#e6edf3">Hermes</text>
+    <text x="80" y="46" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#8b949e">Bot Mode</text>
+    <text x="80" y="62" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#8b949e">Alpha/Bravo/Bots</text>
+    <text x="80" y="74" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#f85149">💬 chat you talk to</text>
+  </g>
+  <text x="360" y="108" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#8b949e">MCP stdio</text>
+  <text x="360" y="122" font-family="ui-monospace,Menlo,monospace" font-size="16" fill="#8b949e">→</text>
+  <!-- MCP -->
+  <g transform="translate(400,78)">
+    <rect width="120" height="44" rx="8" fill="#161b22" stroke="#30363d"/>
+    <text x="60" y="18" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="10" font-weight="700" fill="#e6edf3">mcp/server.js</text>
+    <text x="60" y="32" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="8" fill="#8b949e">5 tools · 80 lines</text>
+  </g>
+  <text x="520" y="108" font-family="ui-monospace,Menlo,monospace" font-size="16" fill="#8b949e">→</text>
+  <!-- Octagon -->
+  <g transform="translate(540,60)">
+    <rect width="180" height="80" rx="12" fill="#161b22" stroke="#30363d"/>
+    <text x="90" y="28" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="700" fill="#e6edf3">Octagon</text>
+    <text x="90" y="46" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#8b949e">hub 80 + brain 110</text>
+    <text x="90" y="62" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#8b949e">4 tables · logNormal</text>
+    <text x="90" y="74" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#8b949e">say + lock</text>
+  </g>
+  <text x="720" y="108" font-family="ui-monospace,Menlo,monospace" font-size="16" fill="#f85149">→</text>
+  <!-- Phones -->
+  <g transform="translate(740,60)">
+    <rect width="220" height="80" rx="12" fill="#0d1117" stroke="#30363d"/>
+    <g transform="translate(14,18)">
+      <rect width="36" height="48" rx="6" fill="none" stroke="#30363d"/>
+      <circle cx="18" cy="38" r="2" fill="#f85149"/>
+      <text x="18" y="62" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="7" fill="#8b949e">Alpha</text>
+    </g>
+    <g transform="translate(60,18)">
+      <rect width="36" height="48" rx="6" fill="none" stroke="#30363d"/>
+      <circle cx="18" cy="38" r="2" fill="#f85149"/>
+      <text x="18" y="62" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="7" fill="#8b949e">Bravo</text>
+    </g>
+    <g transform="translate(106,18)">
+      <rect width="36" height="48" rx="6" fill="none" stroke="#30363d"/>
+      <circle cx="18" cy="38" r="2" fill="#f85149"/>
+      <text x="18" y="62" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="7" fill="#8b949e">Charlie</text>
+    </g>
+    <g transform="translate(152,18)">
+      <rect width="36" height="48" rx="6" fill="none" stroke="#30363d"/>
+      <circle cx="18" cy="38" r="2" fill="#f85149"/>
+      <text x="18" y="62" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="7" fill="#8b949e">Delta</text>
+    </g>
+    <text x="110" y="78" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="8" fill="#8b949e">real iPhones · VoiceControl</text>
+  </g>
+  <!-- bottom notes -->
+  <text x="500" y="170" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#e6edf3">Smart, not vision — Hermes calls warm_phone, Octagon does the hands</text>
+  <text x="500" y="188" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#8b949e">No computer-use click. No forking 50k lines. One MCP file, one lock, logNormal jitter, 4 tables.</text>
+  <g transform="translate(40,210)">
+    <rect width="300" height="70" rx="8" fill="#161b22" stroke="#30363d"/>
+    <text x="12" y="18" font-family="ui-monospace,Menlo,monospace" font-size="10" font-weight="700" fill="#f85149">Frontend — Crockbot 1:1</text>
+    <text x="12" y="34" font-family="Inter, sans-serif" font-size="11" fill="#e6edf3">Left: crocs · Center: chat per phone · Right: Bildschirm</text>
+    <text x="12" y="50" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#8b949e">Click phone → Nachricht an Alpha → modal screen</text>
+    <text x="12" y="64" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#8b949e">One page / — was 9 pages Glasshouse</text>
+  </g>
+  <g transform="translate(360,210)">
+    <rect width="300" height="70" rx="8" fill="#161b22" stroke="#30363d"/>
+    <text x="12" y="18" font-family="ui-monospace,Menlo,monospace" font-size="10" font-weight="700" fill="#f85149">Hands — already built, upgraded</text>
+    <text x="12" y="34" font-family="Inter, sans-serif" font-size="11" fill="#e6edf3">hub 393→80 · brain 1985→110 · DB 1495→80</text>
+    <text x="12" y="50" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#8b949e">logNormal + burst · z-score parity · global lock</text>
+    <text x="12" y="64" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#8b949e">42k → 1.8k lines (-40k) · build 3.9kB</text>
+  </g>
+  <g transform="translate(680,210)">
+    <rect width="280" height="70" rx="8" fill="#1f2937" stroke="#f85149"/>
+    <text x="12" y="18" font-family="ui-monospace,Menlo,monospace" font-size="10" font-weight="700" fill="#f85149">Free · you own it</text>
+    <text x="12" y="34" font-family="Inter, sans-serif" font-size="11" fill="#e6edf3">No $2k rented farm · No SaaS</text>
+    <text x="12" y="50" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#8b949e">MIT · one Mac mini · 4 phones</text>
+    <text x="12" y="64" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#8b949e">Hermes has full context via MCP</text>
+  </g>
+  <text x="500" y="306" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#6e7681">ponytail: one lock if >8 phones → per-slot · one MCP file if you need vision → add computer-use skill, not fork</text>
+</svg>
