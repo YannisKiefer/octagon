@@ -31,7 +31,7 @@ def main():
     # events — grok-style chat bubbles
     evts=[
         ("US evening: 0 replies. Nothing cleared 12x that was actually our ICP (closest was a Turkish Trendyol tax rant, skipped).","phone1"),
-        ("Shipped one original off the unused Drobin angle instead: https://x.com/yannis1kiefer/status/2092327","phone1"),
+        ("Shipped one original off the unused angle instead — link is in the queue for review.","phone1"),
         ("Last hourly: still no gold. Didn't pad. Original already went out this hour so nothing else to ship.","phone2"),
         ("Ran the nightly learn pass — numbers clear enough to change playbook. Harvested all 41 ships. Replies: median 14 views, best 324. Fillers in dead hours are worth nothing. Two changes: zero-gold hour = no post at all.","phone4"),
         ("Cron minutes re-rolled too, hourly to :17 and the evening wave to 20:27.","phone4"),

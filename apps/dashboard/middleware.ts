@@ -34,7 +34,9 @@ export default withAuth(
     const token = req.nextauth.token;
     const pathname = req.nextUrl.pathname;
 
-    if (pathname.startsWith("/api/") && !pathname.startsWith("/api/auth/") && !pathname.startsWith("/api/health")) {
+    // ponytail: local-first app — API auth enforced in production only.
+    // Dev stays open so the UI works out of the box on localhost.
+    if (process.env.NODE_ENV === "production" && pathname.startsWith("/api/") && !pathname.startsWith("/api/auth/") && !pathname.startsWith("/api/health")) {
       if (!token) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }

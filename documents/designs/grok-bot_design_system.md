@@ -62,7 +62,7 @@ No monospace anywhere (previous version was wrong).
 ## 4. Layout (top to bottom)
 
 Titlebar: traffic lights left · "+" at sidebar edge · gear + ❯❯ far right.
-Sidebar: Suchen → chat rows (avatar | name+tag+time / preview) → bottom: Plugins row, Yannis Kiefer row (YK avatar).
+Sidebar: Suchen → chat rows (avatar | name+tag+time / preview) → bottom: add-agent row.
 Center: header (avatar 34px, name, ID below) → scroll (timestamp, bubble, timestamp, bubble …, centered pill) → input pill.
 Right: "Bildschirm von X" label centered → screen box (spinner) → "Routinen" + plus → clock rows.
 Flow: click row → header/messages/input placeholder/right panel all switch. Click screen box → phone modal. ✕ / backdrop closes.
@@ -76,9 +76,9 @@ Flow: click row → header/messages/input placeholder/right panel all switch. Cl
 
 | Reference | Octagon |
 |---|---|
-| Ralf (+ tag "X- Marketing") | Alpha (+ tag "Warmup") |
-| Rufklar / E-Mail / Finance | Bravo / Charlie / Delta |
-| "Nachricht an Ralf" | "Nachricht an {Phone}" |
-| "Bildschirm von Ralf" | "Bildschirm von {Phone}" |
+| Reference chat name | Alpha (+ tag "Warmup") |
+| Other reference chats | Bravo / Charlie / Delta |
+| "Nachricht an {name}" | "Nachricht an {Phone}" |
+| "Bildschirm von {name}" | "Bildschirm von {Phone}" |
 | X routines (morning trend, hourly post…) | farm routines (Warmup sweep, Auto-post, Parity check, Nightly learn) |
 | message text | farm-agent reports (swipes, jitter, learn pass) |

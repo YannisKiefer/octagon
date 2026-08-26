@@ -1,5 +1,6 @@
 import Database from "better-sqlite3";
 import path from "path";
+import crypto from "crypto";
 
 const DB_PATH = path.join(
   process.env.FARM_DB_PATH || process.env.OCTRAGON_DB_PATH || path.resolve(process.cwd(), "..", "..", "infra", "db", "farm.db"),
@@ -216,10 +217,36 @@ export function listFarmTasks(fromIso?: string, toIso?: string): FarmTask[] {
 }
 
 export type FarmEvent = { id: string; ts: string; level: string; device_id: string | null; task_id: string | null; event: string; data: string };
-export function listFarmEvents(limit = 50): FarmEvent[] {
+export function listFarmEvents(limit = 50, deviceId?: string): FarmEvent[] {
   try {
-    return getFarmDb({ readonly: true }).prepare("SELECT * FROM farm_events ORDER BY ts DESC LIMIT ?").all(limit) as FarmEvent[];
+    const db = getFarmDb({ readonly: true });
+    if (deviceId) {
+      return db.prepare("SELECT * FROM farm_events WHERE device_id = ? ORDER BY ts DESC LIMIT ?").all(deviceId, limit) as FarmEvent[];
+    }
+    return db.prepare("SELECT * FROM farm_events ORDER BY ts DESC LIMIT ?").all(limit) as FarmEvent[];
   } catch {
     return [];
   }
+}
+
+export function insertFarmEvent(deviceId: string | null, event: string, level = "info", data: Record<string, unknown> = {}): FarmEvent {
+  const db = getFarmDb({ readonly: false });
+  const now = new Date().toISOString();
+  const row = { id: crypto.randomUUID(), ts: now, level, device_id: deviceId, task_id: null, event, data: JSON.stringify(data) };
+  db.prepare("INSERT INTO farm_events (id, ts, level, device_id, task_id, event, data) VALUES (?, ?, ?, ?, ?, ?, ?)")
+    .run(row.id, row.ts, row.level, row.device_id, row.task_id, row.event, row.data);
+  return row;
+}
+
+export function createFarmDevice(prefix: string, displayName?: string): FarmDevice {
+  const db = getFarmDb({ readonly: false });
+  const count = (db.prepare("SELECT COUNT(*) AS c FROM farm_devices").get() as { c: number }).c;
+  const phone = count + 1;
+  const id = `phone${phone}`;
+  const now = new Date().toISOString();
+  db.prepare("INSERT INTO farm_devices (id, phone_number, display_name, voice_prefix, usb_udid, active, created_at, updated_at) VALUES (?, ?, ?, ?, '', 1, ?, ?)")
+    .run(id, phone, displayName || `${prefix} (Phone ${phone})`, prefix, now, now);
+  db.prepare("INSERT INTO farm_device_health (device_id, usb_connected, session_state, updated_at) VALUES (?, 0, 'idle', ?)")
+    .run(id, now);
+  return db.prepare("SELECT * FROM farm_devices WHERE id = ?").get(id) as FarmDevice;
 }
