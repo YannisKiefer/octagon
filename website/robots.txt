@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://yanniskiefer.github.io/octagon/sitemap.xml

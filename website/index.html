@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Octagon - your iPhone fleet, on your Mac</title>
+  <meta name="description" content="Octagon is a local-first, open-source console that turns iPhones you own into a scriptable fleet, driven by iOS Voice Control. Runs on your Mac. No cloud, no unofficial APIs, no jailbreak.">
+  <link rel="canonical" href="https://yanniskiefer.github.io/octagon/">
+  <meta name="theme-color" content="#0d0d0f">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Octagon">
+  <meta property="og:title" content="Octagon - your iPhone fleet, on your Mac">
+  <meta property="og:description" content="A local-first, open-source console that turns iPhones you own into a scriptable fleet, driven by iOS Voice Control. No cloud, no unofficial APIs, no jailbreak.">
+  <meta property="og:url" content="https://yanniskiefer.github.io/octagon/">
+  <meta property="og:image" content="assets/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Octagon - your iPhone fleet, on your Mac">
+  <meta name="twitter:description" content="A local-first, open-source console that turns iPhones you own into a scriptable fleet, driven by iOS Voice Control. No cloud, no unofficial APIs, no jailbreak.">
+  <meta name="twitter:image" content="assets/og.png">
+
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="./">
+        <svg class="mark" viewBox="0 0 64 64" role="img" aria-label="Octagon logo">
+          <polygon points="22.05,7.98 41.95,7.98 56.02,22.05 56.02,41.95 41.95,56.02 22.05,56.02 7.98,41.95 7.98,22.05"
+            fill="none" stroke="currentColor" stroke-width="5"/>
+        </svg>
+        <span>Octagon</span>
+      </a>
+      <nav class="site-nav" aria-label="Site">
+        <a href="#how-it-works">How it works</a>
+        <a href="#demo">Demo</a>
+        <a href="#quick-start">Quick start</a>
+        <a href="#mcp">MCP</a>
+        <a href="#limits">Limits</a>
+        <a href="#privacy">Privacy</a>
+      </nav>
+      <a class="btn btn-ghost btn-small header-github" href="https://github.com/YannisKiefer/octagon">GitHub</a>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ============ Hero ============ -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="live-cue"><span class="dot" aria-hidden="true"></span>Local-first. Nothing leaves your Mac.</p>
+          <h1 id="hero-title">Your iPhone fleet, driven by your Mac.</h1>
+          <p class="hero-lede">Octagon is a local-first, open-source console that turns iPhones you own into a scriptable fleet. Your Mac speaks cues aloud, and each iPhone executes them through its own Voice Control commands.</p>
+          <p class="hero-sub">No cloud. No unofficial APIs. No jailbreak. MIT licensed.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#quick-start">Get started</a>
+            <a class="btn btn-ghost" href="https://github.com/YannisKiefer/octagon">View on GitHub</a>
+          </div>
+        </div>
+        <figure class="shot hero-shot">
+          <div class="shot-frame" data-shot>
+            <span class="shot-label">Dashboard screenshot - synthetic demo data</span>
+            <img src="assets/screenshots/dashboard-main.png" alt="Octagon dashboard: the device fleet as a chat, with phone health and recent events" width="1440" height="900" loading="eager" data-fallback>
+          </div>
+          <figcaption>The dashboard. Every phone is an agent in one chat.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ What it is ============ -->
+    <section class="section" id="what" aria-labelledby="what-title">
+      <div class="wrap">
+        <p class="eyebrow"><svg class="eyebrow-mark" viewBox="0 0 64 64" aria-hidden="true"><polygon points="22.05,7.98 41.95,7.98 56.02,22.05 56.02,41.95 41.95,56.02 22.05,56.02 7.98,41.95 7.98,22.05" fill="none" stroke="currentColor" stroke-width="8"/></svg>What it is</p>
+        <h2 id="what-title">One chat. Every phone. Your hardware.</h2>
+        <p class="section-lede">Octagon runs entirely on your Mac. It coordinates the iPhones you already own over iOS Voice Control: the Mac says a cue like "Alpha Swipe Next", and the phone that listens for that cue executes it. What it does today:</p>
+
+        <div class="cards">
+          <article class="card">
+            <h3>Chat dashboard</h3>
+            <p>Your fleet as one conversation. Phones appear as agents, sessions and health reports land in the chat, and you can see what each phone is doing without touching it.</p>
+          </article>
+          <article class="card">
+            <h3>Scheduled pacing sessions</h3>
+            <p>The hub runs swipe pacing sessions on a schedule. It restarts a hung phone on its own, and a global audio lock makes sure only one phone is cued at a time.</p>
+          </article>
+          <article class="card">
+            <h3>Health and event log</h3>
+            <p>Device health and every event are written to one local SQLite file: <code>infra/db/farm.db</code>. No second database, no sync service, nothing in the cloud.</p>
+          </article>
+          <article class="card">
+            <h3>MCP server</h3>
+            <p>Five tools over the Model Context Protocol. Claude Desktop, Claude Code or any MCP client can list phones, run sessions and read status from your fleet.</p>
+          </article>
+        </div>
+
+        <aside class="not-do" aria-label="What Octagon does not do">
+          <h3>What it does not do</h3>
+          <p>Posting content is on the roadmap, not implemented. There are no auto likes, comments, follows or DMs, and the project will not accept features that fake engagement or try to defeat platform enforcement. There is no proxy support.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ How it works ============ -->
+    <section class="section section-alt" id="how-it-works" aria-labelledby="how-title">
+      <div class="wrap">
+        <p class="eyebrow"><svg class="eyebrow-mark" viewBox="0 0 64 64" aria-hidden="true"><polygon points="22.05,7.98 41.95,7.98 56.02,22.05 56.02,41.95 41.95,56.02 22.05,56.02 7.98,41.95 7.98,22.05" fill="none" stroke="currentColor" stroke-width="8"/></svg>How it works</p>
+        <h2 id="how-title">Real cues, spoken aloud</h2>
+        <p class="section-lede">A hub on your Mac keeps one brain per phone. Each brain speaks its phone's cue through the Mac's voice, with human-like timing between cues. The phone's custom Voice Control command does the rest. All of it is local: the dashboard, the hub, and one SQLite file.</p>
+
+        <figure class="diagram" role="group" aria-labelledby="diagram-caption">
+          <!-- Desktop diagram -->
+          <svg class="diagram-svg diagram-desktop" viewBox="0 0 960 640" role="img" aria-labelledby="dg-title-d dg-desc-d">
+            <title id="dg-title-d">Octagon architecture</title>
+            <desc id="dg-desc-d">On your Mac, a dashboard and a hub with one brain per phone write to a local SQLite file. The hub speaks cues to iPhones over Voice Control. An MCP client reaches the same farm over a local stdio server.</desc>
+            <!-- Mac container -->
+            <rect class="dg-container" x="24" y="24" width="560" height="544" rx="14"/>
+            <text class="dg-container-label" x="40" y="52">Your Mac</text>
+            <!-- Dashboard -->
+            <rect class="dg-box" x="48" y="72" width="512" height="64" rx="10"/>
+            <text class="dg-title" x="68" y="99">Dashboard</text>
+            <text class="dg-sub" x="68" y="120">localhost:3010, chat for the fleet</text>
+            <!-- arrow dashboard -> hub -->
+            <line class="dg-line" x1="304" y1="136" x2="304" y2="162" marker-end="url(#arrow)"/>
+            <text class="dg-sub" x="318" y="154">queue</text>
+            <!-- Hub -->
+            <rect class="dg-box" x="48" y="168" width="512" height="88" rx="10"/>
+            <text class="dg-title" x="68" y="198">Hub - infra/farm/hub.js</text>
+            <text class="dg-sub" x="68" y="220">one brain per phone, self-healing restarts,</text>
+            <text class="dg-sub" x="68" y="238">global audio lock: one cue at a time</text>
+            <!-- hub -> brains -->
+            <line class="dg-line" x1="304" y1="256" x2="128" y2="284" marker-end="url(#arrow)"/>
+            <line class="dg-line" x1="304" y1="256" x2="304" y2="284" marker-end="url(#arrow)"/>
+            <line class="dg-line" x1="304" y1="256" x2="480" y2="284" marker-end="url(#arrow)"/>
+            <!-- Brains -->
+            <rect class="dg-box" x="48" y="288" width="152" height="56" rx="10"/>
+            <text class="dg-title" x="64" y="312">Brain Alpha</text>
+            <text class="dg-sub" x="64" y="332">speaks its cue</text>
+            <rect class="dg-box" x="216" y="288" width="152" height="56" rx="10"/>
+            <text class="dg-title" x="232" y="312">Brain Bravo</text>
+            <text class="dg-sub" x="232" y="332">speaks its cue</text>
+            <rect class="dg-box" x="384" y="288" width="152" height="56" rx="10"/>
+            <text class="dg-title" x="400" y="312">Brain Charlie</text>
+            <text class="dg-sub" x="400" y="332">speaks its cue</text>
+            <!-- SQLite -->
+            <rect class="dg-box dg-db" x="48" y="400" width="512" height="72" rx="10"/>
+            <text class="dg-title" x="68" y="430">SQLite - infra/db/farm.db</text>
+            <text class="dg-sub" x="68" y="452">every event and health record, one file</text>
+            <!-- dashed reads/writes -->
+            <polyline class="dg-dash" points="560,104 572,104 572,436 560,436"/>
+            <line class="dg-dash" x1="548" y1="256" x2="548" y2="400"/>
+            <!-- cue bus to phones -->
+            <polyline class="dg-cue" points="560,212 624,212 624,128" />
+            <line class="dg-cue" x1="624" y1="212" x2="624" y2="432"/>
+            <line class="dg-cue" x1="624" y1="128" x2="682" y2="128" marker-end="url(#arrowcue)"/>
+            <line class="dg-cue" x1="624" y1="280" x2="682" y2="280" marker-end="url(#arrowcue)"/>
+            <line class="dg-cue" x1="624" y1="432" x2="682" y2="432" marker-end="url(#arrowcue)"/>
+            <text class="dg-sub" x="636" y="106" text-anchor="middle">spoken cue</text>
+            <!-- Phones -->
+            <rect class="dg-box" x="688" y="72" width="248" height="112" rx="10"/>
+            <text class="dg-title" x="708" y="102">iPhone - Alpha</text>
+            <text class="dg-sub" x="708" y="124">Voice Control custom command</text>
+            <text class="dg-mono" x="708" y="148">"Alpha Swipe Next"</text>
+            <rect class="dg-box" x="688" y="224" width="248" height="112" rx="10"/>
+            <text class="dg-title" x="708" y="254">iPhone - Bravo</text>
+            <text class="dg-sub" x="708" y="276">Voice Control custom command</text>
+            <text class="dg-mono" x="708" y="300">"Bravo Swipe Next"</text>
+            <rect class="dg-box" x="688" y="376" width="248" height="112" rx="10"/>
+            <text class="dg-title" x="708" y="406">iPhone - Charlie</text>
+            <text class="dg-sub" x="708" y="428">Voice Control custom command</text>
+            <text class="dg-mono" x="708" y="452">"Charlie Swipe Next"</text>
+            <text class="dg-sub" x="636" y="508" text-anchor="middle">say, one at a time</text>
+            <!-- MCP -->
+            <rect class="dg-box dg-mcp" x="688" y="524" width="248" height="76" rx="10"/>
+            <text class="dg-title" x="708" y="552">Claude Desktop / MCP client</text>
+            <text class="dg-sub" x="708" y="574">mcp/server.js, local stdio</text>
+            <line class="dg-dash" x1="688" y1="562" x2="590" y2="562" marker-end="url(#arrow)"/>
+            <text class="dg-sub" x="639" y="550" text-anchor="middle">same five tools</text>
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#3a3a3f"/>
+              </marker>
+              <marker id="arrowcue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#30d158"/>
+              </marker>
+            </defs>
+          </svg>
+
+          <!-- Mobile diagram -->
+          <svg class="diagram-svg diagram-mobile" viewBox="0 0 480 860" role="img" aria-labelledby="dg-title-m dg-desc-m">
+            <title id="dg-title-m">Octagon architecture</title>
+            <desc id="dg-desc-m">On your Mac, a dashboard and a hub with one brain per phone write to a local SQLite file. The hub speaks cues to iPhones over Voice Control. An MCP client reaches the same farm over a local stdio server.</desc>
+            <rect class="dg-container" x="16" y="16" width="448" height="380" rx="14"/>
+            <text class="dg-container-label" x="32" y="42">Your Mac</text>
+            <rect class="dg-box" x="32" y="56" width="416" height="56" rx="10"/>
+            <text class="dg-title" x="48" y="80">Dashboard</text>
+            <text class="dg-sub" x="48" y="100">localhost:3010</text>
+            <line class="dg-line" x1="240" y1="112" x2="240" y2="136" marker-end="url(#arrowm)"/>
+            <rect class="dg-box" x="32" y="140" width="416" height="76" rx="10"/>
+            <text class="dg-title" x="48" y="168">Hub - infra/farm/hub.js</text>
+            <text class="dg-sub" x="48" y="190">one brain per phone, self-healing restarts,</text>
+            <text class="dg-sub" x="48" y="206">global audio lock: one cue at a time</text>
+            <line class="dg-line" x1="240" y1="216" x2="96" y2="242" marker-end="url(#arrowm)"/>
+            <line class="dg-line" x1="240" y1="216" x2="240" y2="242" marker-end="url(#arrowm)"/>
+            <line class="dg-line" x1="240" y1="216" x2="384" y2="242" marker-end="url(#arrowm)"/>
+            <rect class="dg-box" x="32" y="246" width="128" height="48" rx="10"/>
+            <text class="dg-title" x="46" y="268">Brain Alpha</text>
+            <rect class="dg-box" x="176" y="246" width="128" height="48" rx="10"/>
+            <text class="dg-title" x="190" y="268">Brain Bravo</text>
+            <rect class="dg-box" x="320" y="246" width="128" height="48" rx="10"/>
+            <text class="dg-title" x="334" y="268">Brain Charlie</text>
+            <rect class="dg-box dg-db" x="32" y="318" width="416" height="56" rx="10"/>
+            <text class="dg-title" x="48" y="342">SQLite - infra/db/farm.db</text>
+            <text class="dg-sub" x="48" y="362">every event and health record</text>
+            <line class="dg-cue" x1="240" y1="396" x2="240" y2="408"/>
+            <text class="dg-mono" x="240" y="426" text-anchor="middle">say "Alpha Swipe Next"</text>
+            <text class="dg-sub" x="240" y="444" text-anchor="middle">one at a time, global audio lock</text>
+            <line class="dg-cue" x1="240" y1="452" x2="240" y2="468" marker-end="url(#arrowcue2)"/>
+            <rect class="dg-box" x="64" y="470" width="352" height="88" rx="10"/>
+            <text class="dg-title" x="84" y="500">iPhone - Alpha</text>
+            <text class="dg-sub" x="84" y="522">Voice Control custom command:</text>
+            <text class="dg-mono" x="84" y="542">"Alpha Swipe Next"</text>
+            <rect class="dg-box" x="64" y="574" width="352" height="88" rx="10"/>
+            <text class="dg-title" x="84" y="604">iPhone - Bravo</text>
+            <text class="dg-sub" x="84" y="626">Voice Control custom command:</text>
+            <text class="dg-mono" x="84" y="646">"Bravo Swipe Next"</text>
+            <rect class="dg-box" x="64" y="678" width="352" height="88" rx="10"/>
+            <text class="dg-title" x="84" y="708">iPhone - Charlie</text>
+            <text class="dg-sub" x="84" y="730">Voice Control custom command:</text>
+            <text class="dg-mono" x="84" y="750">"Charlie Swipe Next"</text>
+            <line class="dg-dash" x1="240" y1="766" x2="240" y2="786" marker-end="url(#arrowm)"/>
+            <rect class="dg-box dg-mcp" x="64" y="790" width="352" height="56" rx="10"/>
+            <text class="dg-title" x="84" y="814">Claude Desktop / any MCP client</text>
+            <text class="dg-sub" x="84" y="834">mcp/server.js, local stdio, same five tools</text>
+            <defs>
+              <marker id="arrowm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#3a3a3f"/>
+              </marker>
+              <marker id="arrowcue2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#30d158"/>
+              </marker>
+            </defs>
+          </svg>
+          <figcaption id="diagram-caption">The hub keeps one brain per phone. Each brain speaks its phone's cue; the phone's Voice Control command does the rest. Everything is written to one SQLite file on your Mac.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ Demo ============ -->
+    <section class="section" id="demo" aria-labelledby="demo-title">
+      <div class="wrap">
+        <p class="eyebrow"><svg class="eyebrow-mark" viewBox="0 0 64 64" aria-hidden="true"><polygon points="22.05,7.98 41.95,7.98 56.02,22.05 56.02,41.95 41.95,56.02 22.05,56.02 7.98,41.95 7.98,22.05" fill="none" stroke="currentColor" stroke-width="8"/></svg>Demo</p>
+        <h2 id="demo-title">See it before you wire a single phone</h2>
+        <p class="section-lede">The screenshots below were taken with synthetic demo data seeded by the repository. No real devices, accounts or activity are shown.</p>
+
+        <div class="demo-shots">
+          <figure class="shot">
+            <div class="shot-frame" data-shot>
+              <span class="shot-label">Dashboard screenshot - synthetic demo data</span>
+              <img src="assets/screenshots/dashboard-main.png" alt="Octagon dashboard with the device fleet chat, running on synthetic demo data" width="1440" height="900" loading="lazy" data-fallback>
+            </div>
+            <figcaption>The fleet chat: phones, sessions and health in one place.</figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="shot-frame" data-shot>
+              <span class="shot-label">Dashboard screenshot - synthetic demo data</span>
+              <img src="assets/screenshots/dashboard-chat.png" alt="A single phone conversation in the Octagon dashboard, showing events and session reports" width="1200" height="800" loading="lazy" data-fallback>
+            </div>
+            <figcaption>One phone, one conversation: what it did and when.</figcaption>
+          </figure>
+        </div>
+
+        <aside class="callout" aria-label="Try Octagon without an iPhone">
+          <h3>Try it without an iPhone</h3>
+          <p>Dry-run mode works with zero phones. The hub starts its brains, follows the same pacing logic, and stays silent.</p>
+          <div class="code">
+            <pre><code>node infra/farm/hub.js --slots=2 --duration=5 --test</code></pre>
+            <button type="button" class="copy-btn" aria-label="Copy command to clipboard">Copy</button>
+          </div>
+          <p class="callout-note">Add demo data for the dashboard with <code>node scripts/seed-demo.js</code>. Everything the seeder writes is fake.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ Quick start ============ -->
+    <section class="section section-alt" id="quick-start" aria-labelledby="qs-title">
+      <div class="wrap wrap-narrow">
+        <p class="eyebrow"><svg class="eyebrow-mark" viewBox="0 0 64 64" aria-hidden="true"><polygon points="22.05,7.98 41.95,7.98 56.02,22.05 56.02,41.95 41.95,56.02 22.05,56.02 7.98,41.95 7.98,22.05" fill="none" stroke="currentColor" stroke-width="8"/></svg>Quick start</p>
+        <h2 id="qs-title">Four commands, then a dashboard</h2>
+        <p class="section-lede">You need a Mac and Node 20 or newer. Clone, configure, install the two workspaces:</p>
+
+        <div class="code">
+          <pre><code>git clone https://github.com/YannisKiefer/octagon.git
+cd octagon
+cp .env.example .env
+npm install --prefix infra/farm
+npm install --prefix apps/dashboard</code></pre>
+          <button type="button" class="copy-btn" aria-label="Copy install commands to clipboard">Copy</button>
+        </div>
+
+        <p class="section-lede">Optional: seed synthetic demo data, then start the dashboard:</p>
+        <div class="code">
+          <pre><code>node scripts/seed-demo.js
+npm run dev --prefix apps/dashboard</code></pre>
+          <button type="button" class="copy-btn" aria-label="Copy seed and run commands to clipboard">Copy</button>
+        </div>
+
+        <p class="section-lede">Open <code>http://localhost:3010</code>. In development the dashboard opens without a login. A production build (<code>npm run build &amp;&amp; npm start</code>) enforces authentication from <code>.env</code>: set <code>DASHBOARD_ADMIN_USER</code> and <code>DASHBOARD_ADMIN_PASSWORD</code>, and give <code>NEXTAUTH_SECRET</code> a real value:</p>
+
+        <div class="code">
+          <pre><code>node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"</code></pre>
+          <button type="button" class="copy-btn" aria-label="Copy secret generation command to clipboard">Copy</button>
+        </div>
+
+        <p class="section-lede">Your data lives in one file, <code>infra/db/farm.db</code>, next to the checkout. Delete it and everything is gone. To connect real iPhones, follow the <a href="https://github.com/YannisKiefer/octagon/blob/main/infra/farm/SETUP-GUIDE.md">setup guide</a>: enable Voice Control on each phone, create its custom command, plug in over USB.</p>
+      </div>
+    </section>
+
+    <!-- ============ MCP ============ -->
+    <section class="section" id="mcp" aria-labelledby="mcp-title">
+      <div class="wrap">
+        <p class="eyebrow"><svg class="eyebrow-mark" viewBox="0 0 64 64" aria-hidden="true"><polygon points="22.05,7.98 41.95,7.98 56.02,22.05 56.02,41.95 41.95,56.02 22.05,56.02 7.98,41.95 7.98,22.05" fill="none" stroke="currentColor" stroke-width="8"/></svg>MCP</p>
+        <h2 id="mcp-title">Five tools, one local server</h2>
+        <p class="section-lede">Octagon ships a local MCP server over stdio. There is no network listener and no auth by design; read access is limited to the local SQLite file. Point Claude Desktop, Claude Code or any MCP client at it:</p>
+
+        <div class="mcp-grid">
+          <div class="mcp-tools">
+            <h3>The tools</h3>
+            <dl class="tool-list">
+              <dt><code>list_phones</code></dt>
+              <dd>List phones registered in the local farm, with health.</dd>
+              <dt><code>get_phone</code></dt>
+              <dd>One phone with its health record.</dd>
+              <dt><code>run_session</code></dt>
+              <dd>Queue a pacing session for a phone (slot, minutes). It executes while the hub is running.</dd>
+              <dt><code>get_events</code></dt>
+              <dd>Recent events for a phone, newest first.</dd>
+              <dt><code>get_phone_screen</code></dt>
+              <dd>Capture the screen via <code>idevicescreenshot</code>, or get an explicit "unavailable" answer. Never a placeholder image.</dd>
+            </dl>
+          </div>
+          <div class="mcp-config">
+            <h3>The config</h3>
+            <div class="code">
+              <pre><code>{
+  "mcpServers": {
+    "octagon": {
+      "command": "node",
+      "args": ["/absolute/path/to/octagon/mcp/server.js"]
+    }
+  }
+}</code></pre>
+              <button type="button" class="copy-btn" aria-label="Copy MCP config to clipboard">Copy</button>
+            </div>
+            <p class="mcp-note">In Claude Desktop this goes in <code>claude_desktop_config.json</code>. In Claude Code you can run: <code>claude mcp add octagon -- node /absolute/path/to/octagon/mcp/server.js</code></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Requirements and limitations ============ -->
+    <section class="section section-alt" id="limits" aria-labelledby="limits-title">
+      <div class="wrap">
+        <p class="eyebrow"><svg class="eyebrow-mark" viewBox="0 0 64 64" aria-hidden="true"><polygon points="22.05,7.98 41.95,7.98 56.02,22.05 56.02,41.95 41.95,56.02 22.05,56.02 7.98,41.95 7.98,22.05" fill="none" stroke="currentColor" stroke-width="8"/></svg>Requirements and limits</p>
+        <h2 id="limits-title">What you need, and what to expect</h2>
+        <div class="limits-grid">
+          <div class="limit-col">
+            <h3>You need</h3>
+            <ul>
+              <li>A Mac. Octagon uses the built-in <code>say</code> command for cues.</li>
+              <li>Node 20 or newer.</li>
+              <li>iPhones you own, with Voice Control enabled and set to English.</li>
+              <li>Optional: <a href="https://libimobiledevice.org">libimobiledevice</a> for screen capture and reading UDIDs.</li>
+            </ul>
+          </div>
+          <div class="limit-col">
+            <h3>Know before you start</h3>
+            <ul>
+              <li>Screen capture needs libimobiledevice and a configured UDID. Without them, the MCP tool answers "unavailable" instead of guessing.</li>
+              <li>One phone is cued at a time. A global audio lock serializes the spoken cues.</li>
+              <li>Voice Control cues are English. Your iPhone Voice Control language should be set accordingly.</li>
+              <li>Sessions execute while the hub is up. It is a local process, not a service.</li>
+              <li>Posting content is on the roadmap, not implemented. No auto likes, comments, follows or DMs. No proxy support.</li>
+            </ul>
+          </div>
+        </div>
+
+        <aside class="risk" aria-label="A note on responsibility">
+          <h3>A note on responsibility</h3>
+          <p>Automating social apps can violate the platforms' terms of service. Use devices and accounts you own, and decide for yourself what you automate. Octagon does not promise any outcome regarding account enforcement.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ Privacy ============ -->
+    <section class="section" id="privacy" aria-labelledby="privacy-title">
+      <div class="wrap wrap-narrow">
+        <p class="eyebrow"><svg class="eyebrow-mark" viewBox="0 0 64 64" aria-hidden="true"><polygon points="22.05,7.98 41.95,7.98 56.02,22.05 56.02,41.95 41.95,56.02 22.05,56.02 7.98,41.95 7.98,22.05" fill="none" stroke="currentColor" stroke-width="8"/></svg>Privacy</p>
+        <h2 id="privacy-title">One file. Your machine.</h2>
+        <p class="section-lede">All state lives in a single local SQLite file: <code>infra/db/farm.db</code>. Devices, health, tasks, events. Nothing leaves the machine: no telemetry, no accounts, no cloud storage. The MCP server is local stdio only. Delete the file, and everything is gone.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-col footer-brand">
+        <a class="brand" href="./">
+          <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+            <polygon points="22.05,7.98 41.95,7.98 56.02,22.05 56.02,41.95 41.95,56.02 22.05,56.02 7.98,41.95 7.98,22.05" fill="none" stroke="currentColor" stroke-width="5"/>
+          </svg>
+          <span>Octagon</span>
+        </a>
+        <p>A local-first console for iPhones you own, driven by iOS Voice Control. Free, open source, MIT licensed.</p>
+      </div>
+      <nav class="footer-col" aria-label="Documentation">
+        <h3>Docs</h3>
+        <ul>
+          <li><a href="https://github.com/YannisKiefer/octagon/blob/main/README.md">README</a></li>
+          <li><a href="https://github.com/YannisKiefer/octagon/blob/main/infra/farm/SETUP-GUIDE.md">Setup guide</a></li>
+          <li><a href="https://github.com/YannisKiefer/octagon/blob/main/SECURITY.md">Security</a></li>
+          <li><a href="https://github.com/YannisKiefer/octagon/blob/main/CONTRIBUTING.md">Contributing</a></li>
+        </ul>
+      </nav>
+      <nav class="footer-col" aria-label="Project">
+        <h3>Project</h3>
+        <ul>
+          <li><a href="https://github.com/YannisKiefer/octagon">GitHub repository</a></li>
+          <li><a href="https://github.com/YannisKiefer/octagon/issues">Issues</a></li>
+          <li><a href="https://github.com/YannisKiefer/octagon/blob/main/LICENSE">MIT license</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bottom">
+      <p class="risk-small">Automating social apps can violate the platforms' terms of service. Use devices and accounts you own, and decide for yourself what you automate.</p>
+      <p><a href="https://github.com/YannisKiefer/octagon">Octagon on GitHub</a> - MIT license</p>
+    </div>
+  </footer>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>
