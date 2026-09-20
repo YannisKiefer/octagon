@@ -145,6 +145,7 @@ export function ensureFarmSchema(db: Database.Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_farm_events_ts ON farm_events(ts);
     CREATE INDEX IF NOT EXISTS idx_farm_events_device ON farm_events(device_id);
+    CREATE INDEX IF NOT EXISTS idx_farm_events_device_ts ON farm_events(device_id, ts DESC);
   `);
 }
 

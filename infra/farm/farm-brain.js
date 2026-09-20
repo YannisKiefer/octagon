@@ -41,7 +41,7 @@ function jitter(baseMs){
 
 let db=null;
 function getDb(){
-  if(!db) { db=new Database(DB_PATH); db.pragma("journal_mode=WAL"); }
+  if(!db) { db=new Database(DB_PATH); db.pragma("journal_mode=WAL"); db.pragma("busy_timeout=5000"); }
   return db;
 }
 function updateHealth(patch){
@@ -52,8 +52,8 @@ function updateHealth(patch){
   }catch{}
 }
 function logEvent(event, level="info", data={}){
-  try{ getDb().prepare("INSERT INTO farm_events (id, ts, level, device_id, event, data) VALUES (?,?,?,?,?,?,?)")
-    .run(Math.random().toString(36).slice(2,9), nowIso(), level, ID, event, JSON.stringify(data)); }catch{}
+  try{ getDb().prepare("INSERT INTO farm_events (id, ts, level, device_id, event, data) VALUES (?,?,?,?,?,?)")
+    .run(require("crypto").randomUUID(), nowIso(), level, ID, event, JSON.stringify(data)); }catch{}
 }
 
 async function say(text){

@@ -52,10 +52,12 @@ function health(){
     }
     try{
       const db=new Database(DB_PATH);
+      db.pragma("busy_timeout=5000");
       // ponytail: handle drift from old 8-col schema → drop and recreate once
       try{ const cols=db.prepare("PRAGMA table_info(hub_status)").all().map(c=>c.name); if(cols.length && !cols.includes("active")) db.exec("DROP TABLE hub_status"); }catch{}
       db.exec(`CREATE TABLE IF NOT EXISTS hub_status(id TEXT PRIMARY KEY, active INTEGER, locked INTEGER, ts TEXT)`);
-      db.prepare(`INSERT INTO hub_status(id,active,locked,ts) VALUES('hub',?,?,?) ON CONFLICT(id) DO UPDATE SET active=excluded.active, locked=excluded.locked, ts=excluded.ts`).run(active, locked?1:0, new Date().toISOString()); db.close();
+      const activeCount=Object.values(workers).filter(w=>w.status==='active').length;
+      db.prepare(`INSERT INTO hub_status(id,active,locked,ts) VALUES('hub',?,?,?) ON CONFLICT(id) DO UPDATE SET active=excluded.active, locked=excluded.locked, ts=excluded.ts`).run(activeCount, locked?1:0, new Date().toISOString()); db.close();
     }catch{}
   },5000);
 }
