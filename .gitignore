@@ -1,13 +1,9 @@
 # deps
 node_modules/
-.pnp/
-.pnp.js
 __pycache__/
 *.pyc
-*.pyo
 .venv/
 venv/
-*.egg-info/
 
 # next
 .next/
@@ -24,16 +20,12 @@ build/
 *_session.json
 *cookies.json
 
-# db & data — keep directories, ignore contents
+# db & data - the database never enters version control
 *.db
 *.db-shm
 *.db-wal
-!infra/db/.gitkeep
 infra/db/*
 !infra/db/.gitkeep
-
-engine/agents/skool/data/*
-!engine/agents/skool/data/.gitkeep
 
 # logs
 logs/
@@ -50,11 +42,3 @@ Thumbs.db
 # editor
 .vscode/
 .idea/
-
-# replit
-.replit
-replit.nix
-
-# assets private
-data/videos/
-data/assets/logo.png

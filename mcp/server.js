@@ -85,7 +85,7 @@ function handle(msg){
           }
         } finally { d.close(); }
       }
-      else if(name==="get_events"){ const d=db(); const r=d.prepare("SELECT ts,level,event FROM farm_events WHERE device_id=? ORDER BY ts DESC LIMIT ?").all(args.phoneId, args.limit||20); d.close(); text=JSON.stringify(r, null, 2); }
+      else if(name==="get_events"){ const d=db(); const r=d.prepare("SELECT ts,level,event FROM farm_events WHERE device_id=? ORDER BY ts DESC LIMIT ?").all(args.phoneId, Math.min(Math.max(parseInt(args.limit)||20, 1), 200)); d.close(); text=JSON.stringify(r, null, 2); }
       else if(name==="get_phone_screen"){ captureScreen(args.phoneId).then(r=>reply(id, {content:[{type:"text", text:JSON.stringify(r, null, 2)}]})); return; }
       else text=`unknown tool ${name}`;
       return reply(id, {content:[{type:"text", text}]});

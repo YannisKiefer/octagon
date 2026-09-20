@@ -9,6 +9,7 @@
 // and accounts you own, and know the rules you operate under.
 'use strict';
 const path = require("path");
+const crypto = require("crypto");
 const { execFile } = require("child_process");
 let Database;
 try { Database = require("better-sqlite3"); } catch { console.error("[brain] better-sqlite3 not found. Run: cd infra/farm && npm install"); process.exit(1); }
@@ -54,7 +55,7 @@ function updateHealth(patch){
 }
 function logEvent(event, level="info", data={}){
   try{ getDb().prepare("INSERT INTO farm_events (id, ts, level, device_id, event, data) VALUES (?,?,?,?,?,?)")
-    .run(Math.random().toString(36).slice(2,9), nowIso(), level, ID, event, JSON.stringify(data)); }catch{}
+    .run(crypto.randomUUID(), nowIso(), level, ID, event, JSON.stringify(data)); }catch{}
 }
 
 async function say(text){

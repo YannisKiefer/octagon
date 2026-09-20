@@ -19,6 +19,7 @@ function getClientIp(req: Request): string {
 
 function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetAt: number } {
   const now = Date.now();
+  if (rateLimitStore.size > 10000) rateLimitStore.clear();
   const entry = rateLimitStore.get(ip);
   if (!entry || now - entry.windowStart > WINDOW_MS) {
     rateLimitStore.set(ip, { count: 1, windowStart: now });
@@ -79,8 +80,7 @@ export default withAuth(
       authorized({ token, req }) {
         const pathname = req.nextUrl.pathname;
         if (
-          pathname === "/" ||
-          pathname.startsWith("/login") || 
+          pathname.startsWith("/login") ||
           pathname.startsWith("/api/auth/") ||
           pathname.startsWith("/api/health")
         ) {
