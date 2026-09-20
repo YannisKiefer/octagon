@@ -167,6 +167,7 @@ In one SQLite file, `infra/db/farm.db`. It stays on your Mac. Delete it to erase
 - [infra/farm/SETUP-GUIDE.md](infra/farm/SETUP-GUIDE.md) - real iPhone setup, step by step
 - [mcp/README.md](mcp/README.md) - MCP tools and client configuration
 - [CHANGELOG.md](CHANGELOG.md) - what changed and when
+- [BRAND.md](BRAND.md) - logo, colors, typography, voice
 
 ## Contributing
 

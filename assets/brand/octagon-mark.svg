@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <defs>
+    <linearGradient id="bronze" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#D9A76F"/>
+      <stop offset="1" stop-color="#B07A42"/>
+    </linearGradient>
+  </defs>
+  <!-- ring: octagonal band, gap on the top-right diagonal, 45-degree cut ends -->
+  <path d="M 163.94 33.28 L 158.27 27.61 L 81.73 27.61 L 27.61 81.73 L 27.61 158.27 L 81.73 212.39 L 158.27 212.39 L 212.39 158.27 L 212.39 81.73 L 206.72 75.99"
+        fill="none" stroke="#1F3A2E" stroke-width="40"
+        stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10"/>
+  <!-- bronze accent: 45-degree parallelogram, offset outward from the gap -->
+  <polygon points="237.6,58.0 205.0,90.6 148.4,34.0 181.0,1.4" fill="url(#bronze)"/>
+</svg>
