@@ -1,0 +1,34 @@
+<!doctype html><html><body><script>
+const img = new Image();
+img.onload = () => {
+  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+  const x = c.getContext('2d', {willReadFrequently:true});
+  x.drawImage(img, 0, 0);
+  const d = x.getImageData(0,0,c.width,c.height);
+  const p = d.data;
+  let minX=1e9,maxX=-1,minY=1e9,maxY=-1;
+  for (let i=0; i<p.length; i+=4) {
+    const lum = 0.2126*p[i] + 0.7152*p[i+1] + 0.0722*p[i+2];
+    p[i]=255; p[i+1]=255; p[i+2]=255;
+    p[i+3] = Math.min(255, Math.round(lum*1.06));
+    const px=(i/4)%c.width, py=Math.floor((i/4)/c.width);
+    if (p[i+3]>8) { if(px<minX)minX=px; if(px>maxX)maxX=px; if(py<minY)minY=py; if(py>maxY)maxY=py; }
+  }
+  x.putImageData(d,0,0);
+  const w=maxX-minX+1, h=maxY-minY+1;
+  function crop(color) {
+    const c2=document.createElement('canvas'); c2.width=w; c2.height=h;
+    const x2=c2.getContext('2d');
+    const d2=x2.createImageData(w,h);
+    for (let y=0;y<h;y++) for (let xi=0;xi<w;xi++) {
+      const si=((y+minY)*c.width+(xi+minX))*4, di=(y*w+xi)*4;
+      d2.data[di]=color[0]; d2.data[di+1]=color[1]; d2.data[di+2]=color[2]; d2.data[di+3]=p[si+3];
+    }
+    x2.putImageData(d2,0,0);
+    return c2.toDataURL('image/png');
+  }
+  window.__out = { white: crop([255,255,255]), black: crop([17,17,18]), w: w, h: h };
+  window.dispatchEvent(new Event('ready'));
+};
+img.src = 'octagon-symbol.png';
+</script></body></html>

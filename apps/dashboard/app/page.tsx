@@ -118,20 +118,9 @@ const STATUS_CHIP: Record<Task["status"], string> = {
 };
 
 function OctagonMark({ size = 18 }: { size?: number }) {
-  // Exact geometry from assets/brand/octagon-mark-reversed.svg (BRAND.md).
   return (
-    <svg width={size} height={size} viewBox="0 0 240 240" aria-hidden="true" className="shrink-0">
-      <path
-        d="M 163.94 33.28 L 158.27 27.61 L 81.73 27.61 L 27.61 81.73 L 27.61 158.27 L 81.73 212.39 L 158.27 212.39 L 212.39 158.27 L 212.39 81.73 L 206.72 75.99"
-        fill="none"
-        stroke="#F8F6F1"
-        strokeWidth="40"
-        strokeLinecap="butt"
-        strokeLinejoin="miter"
-        strokeMiterlimit="10"
-      />
-      <polygon points="237.6,58.0 205.0,90.6 148.4,34.0 181.0,1.4" fill="#C58E5B" />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src="/logo-reversed.png" alt="" width={size} height={size} style={{ borderRadius: 4 }} />
   );
 }
 
@@ -789,7 +778,7 @@ export default function OctagonChat() {
                 {sendError}
               </p>
             )}
-            <div className="flex items-center gap-2 bg-[#14231B] border border-[#2E4538] rounded-full pl-4 pr-2 py-[7px]">
+            <div className="flex items-center gap-2 bg-[#14231B] border border-[#2E4538] focus-within:border-[#C58E5B] rounded-full pl-4 pr-2 py-[7px] transition-colors">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -816,8 +805,8 @@ export default function OctagonChat() {
                 aria-pressed={listening}
                 className={`w-[30px] h-[30px] rounded-full grid place-items-center shrink-0 transition-colors ${
                   listening
-                    ? "bg-[#30d158] text-[#0F1F17]"
-                    : "bg-[#F8F6F1] text-[#0F1F17] hover:bg-white"
+                    ? "bg-[#C58E5B] text-[#0F1F17]"
+                    : "bg-[#F8F6F1] text-[#0F1F17] hover:bg-[#E9E6DE]"
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
                 <MicIcon />
@@ -921,7 +910,7 @@ export default function OctagonChat() {
                   setSessionError("");
                   setModal("session");
                 }}
-                className="mt-4 mb-2 w-full bg-[#F8F6F1] hover:bg-white text-[#0F1F17] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
+                className="mt-4 mb-2 w-full bg-[#C58E5B] hover:bg-[#D9A76F] text-[#0F1F17] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
               >
                 New session
               </button>
@@ -975,7 +964,7 @@ export default function OctagonChat() {
             </p>
             <button
               onClick={() => setModal(null)}
-              className="mt-4 w-full bg-[#1F3A2E] hover:bg-[#3a3a3c] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
+              className="mt-4 w-full border border-[#2E4538] text-[#F8F6F1] hover:bg-[#182A20] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
             >
               Close
             </button>
@@ -1014,7 +1003,7 @@ export default function OctagonChat() {
             <button
               onClick={addDevice}
               disabled={adding || addPrefix.trim().length < 2}
-              className="w-full bg-[#F8F6F1] hover:bg-white disabled:opacity-40 text-[#0F1F17] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
+              className="w-full bg-[#C58E5B] hover:bg-[#D9A76F] disabled:opacity-40 text-[#0F1F17] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
             >
               {adding ? "Adding" : "Add device"}
             </button>
@@ -1067,7 +1056,7 @@ export default function OctagonChat() {
             <button
               onClick={scheduleSession}
               disabled={sessionPosting}
-              className="w-full bg-[#F8F6F1] hover:bg-white disabled:opacity-40 text-[#0F1F17] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
+              className="w-full bg-[#C58E5B] hover:bg-[#D9A76F] disabled:opacity-40 text-[#0F1F17] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
             >
               {sessionPosting ? "Scheduling" : "Schedule session"}
             </button>
@@ -1098,7 +1087,7 @@ export default function OctagonChat() {
                 <DetailRow
                   label="Cloud"
                   value="None - everything stays on this Mac"
-                  valueClass="text-[#30d158]"
+                  valueClass="text-[#C58E5B]"
                 />
                 <DetailRow
                   label="Checked at"

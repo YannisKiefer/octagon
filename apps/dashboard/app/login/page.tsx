@@ -33,28 +33,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0d0f] text-[#f5f5f7] flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-[#0F1F17] text-[#F8F6F1] flex items-center justify-center px-4">
+      <div className="w-full max-w-sm bg-[#14231B] border border-[#2E4538] rounded-[24px] p-8">
         <div className="mb-8 text-center">
-          <svg
-            width="40"
-            height="40"
-            viewBox="0 0 32 32"
-            aria-hidden="true"
-            className="mx-auto mb-4"
-          >
-            <rect width="32" height="32" rx="7" fill="#111113" />
-            <polygon
-              points="25.2,19.8 19.8,25.2 12.2,25.2 6.8,19.8 6.8,12.2 12.2,6.8 19.8,6.8 25.2,12.2"
-              fill="none"
-              stroke="#f5f5f7"
-              strokeWidth="2"
-              strokeLinejoin="round"
-            />
-            <circle cx="16" cy="16" r="2.5" fill="#30d158" />
-          </svg>
-          <h1 className="text-xl font-semibold tracking-wide">Octagon</h1>
-          <p className="text-[13px] text-[#98989d] mt-1">
+          <img src="/icon.png" alt="Octagon" width="40" height="40" className="mx-auto mb-4 rounded-[7px]" />
+          <h1 className="text-xl font-bold tracking-wide">Octagon</h1>
+          <p className="text-[13px] text-[#A8B5AD] mt-1">
             Local console for your iPhone fleet
           </p>
         </div>
@@ -63,7 +47,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="username"
-              className="block text-xs uppercase tracking-wider text-[#98989d] mb-1"
+              className="block text-xs uppercase tracking-wider text-[#A8B5AD] mb-1"
             >
               Username
             </label>
@@ -75,13 +59,13 @@ export default function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
               required
-              className="w-full bg-[#1b1b1d] border border-[#2c2c2e] rounded-lg text-[#f5f5f7] px-3 py-2 text-sm placeholder:text-[#636366] focus:outline-none focus:border-[#48484a]"
+              className="w-full bg-[#182A20] border border-[#2E4538] rounded-lg text-[#F8F6F1] px-3 py-2 text-sm placeholder:text-[#6E7F74] focus:outline-none focus:border-[#C58E5B]"
             />
           </div>
           <div>
             <label
               htmlFor="password"
-              className="block text-xs uppercase tracking-wider text-[#98989d] mb-1"
+              className="block text-xs uppercase tracking-wider text-[#A8B5AD] mb-1"
             >
               Password
             </label>
@@ -93,7 +77,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
               required
-              className="w-full bg-[#1b1b1d] border border-[#2c2c2e] rounded-lg text-[#f5f5f7] px-3 py-2 text-sm placeholder:text-[#636366] focus:outline-none focus:border-[#48484a]"
+              className="w-full bg-[#182A20] border border-[#2E4538] rounded-lg text-[#F8F6F1] px-3 py-2 text-sm placeholder:text-[#6E7F74] focus:outline-none focus:border-[#C58E5B]"
             />
           </div>
 
@@ -106,13 +90,13 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#f5f5f7] text-black rounded-full py-2 text-sm font-semibold hover:bg-white transition-colors disabled:opacity-50"
+            className="w-full bg-[#C58E5B] text-[#0F1F17] rounded-full py-2 text-sm font-bold hover:bg-[#D9A76F] transition-colors disabled:opacity-50"
           >
             {loading ? "Signing in" : "Sign in"}
           </button>
         </form>
 
-        <p className="text-[11.5px] text-[#636366] text-center mt-6">
+        <p className="text-[11.5px] text-[#6E7F74] text-center mt-6">
           Credentials are configured in your .env file. Everything stays on this Mac.
         </p>
       </div>

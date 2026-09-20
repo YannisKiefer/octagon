@@ -9,8 +9,10 @@ The mark is an octagonal band with a gap on the top-right diagonal and a bronze
 parallelogram set into that gap at 45 degrees, offset outward. The wordmark is
 "Octagon" set in DM Sans Medium.
 
-- Master files: `assets/brand/octagon-mark.svg` (full color),
-  `assets/brand/octagon-mark-reversed.svg` (ivory band for dark backgrounds).
+- Master file: `assets/brand/octagon-mark.png` (full color on transparency,
+  from the approved artwork) and `assets/brand/octagon-mark-reversed.png`
+  (ivory band for dark backgrounds). `assets/brand/logo-reference.png` is the
+  approved reference artwork. Do not redraw, trace or approximate the mark.
 - Variants: mark alone (icons, avatars, favicon), mark + wordmark (headers,
   documents), wordmark alone (rare; only where the mark already appears nearby).
 - Clear space: keep at least the height of the band around the mark on all sides.
@@ -67,6 +69,7 @@ as direction (see VISION.md).
 
 ## Files
 
-- `assets/brand/octagon-mark.svg` - full-color mark
-- `assets/brand/octagon-mark-reversed.svg` - reversed mark for dark surfaces
+- `assets/brand/octagon-mark.png` - full-color mark on transparency
+- `assets/brand/octagon-mark-reversed.png` - reversed mark for dark surfaces
+- `apps/dashboard/app/icon.png`, `website/assets/favicon.png` - app icon tile
 - `website/assets/fonts/`, `apps/dashboard/public/fonts/` - DM Sans (OFL)

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="Octagon" width="100%"/>
+<img src="assets/banner.png" alt="Octagon" width="100%"/>
 
 # Your iPhone fleet, on your Mac.
 

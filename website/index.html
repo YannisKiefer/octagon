@@ -6,8 +6,8 @@
   <title>Octagon - your iPhone fleet, on your Mac</title>
   <meta name="description" content="Octagon is a local-first, open-source console that turns iPhones you own into a scriptable fleet, driven by iOS Voice Control. Runs on your Mac. No cloud, no unofficial APIs, no jailbreak.">
   <link rel="canonical" href="https://yanniskiefer.github.io/octagon/">
-  <meta name="theme-color" content="#0d0d0f">
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <meta name="theme-color" content="#f8f6f1">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Octagon">
@@ -28,10 +28,7 @@
   <header class="site-header">
     <div class="wrap header-row">
       <a class="brand" href="./">
-        <svg class="mark" viewBox="0 0 64 64" role="img" aria-label="Octagon logo">
-          <polygon points="22.05,7.98 41.95,7.98 56.02,22.05 56.02,41.95 41.95,56.02 22.05,56.02 7.98,41.95 7.98,22.05"
-            fill="none" stroke="currentColor" stroke-width="5"/>
-        </svg>
+        <img class="mark" src="assets/logo.png" alt="Octagon logo" width="28" height="28">
         <span>Octagon</span>
       </a>
       <nav class="site-nav" aria-label="Site">
@@ -181,10 +178,10 @@
             <text class="dg-sub" x="639" y="550" text-anchor="middle">same five tools</text>
             <defs>
               <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#3a3a3f"/>
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#4A5A50"/>
               </marker>
               <marker id="arrowcue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#30d158"/>
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#8F6234"/>
               </marker>
             </defs>
           </svg>
@@ -237,10 +234,10 @@
             <text class="dg-sub" x="84" y="834">mcp/server.js, local stdio, same five tools</text>
             <defs>
               <marker id="arrowm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#3a3a3f"/>
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#4A5A50"/>
               </marker>
               <marker id="arrowcue2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#30d158"/>
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#8F6234"/>
               </marker>
             </defs>
           </svg>
@@ -262,14 +259,14 @@
               <span class="shot-label">Dashboard screenshot - synthetic demo data</span>
               <img src="assets/screenshots/dashboard-main.png" alt="Octagon dashboard with the device fleet chat, running on synthetic demo data" width="1440" height="900" loading="lazy" data-fallback>
             </div>
-            <figcaption>The fleet chat: phones, sessions and health in one place.</figcaption>
+            <figcaption>The fleet chat: phones, sessions and health in one place. Synthetic demo data.</figcaption>
           </figure>
-          <figure class="shot">
+          <figure class="shot demo-secondary">
             <div class="shot-frame" data-shot>
               <span class="shot-label">Dashboard screenshot - synthetic demo data</span>
-              <img src="assets/screenshots/dashboard-chat.png" alt="A single phone conversation in the Octagon dashboard, showing events and session reports" width="1200" height="800" loading="lazy" data-fallback>
+              <img src="assets/screenshots/dashboard-chat.png" alt="A single phone conversation in the Octagon dashboard, showing events and session reports on synthetic demo data" width="1440" height="900" loading="lazy" data-fallback>
             </div>
-            <figcaption>One phone, one conversation: what it did and when.</figcaption>
+            <figcaption>One phone, one conversation: what it did and when. Synthetic demo data.</figcaption>
           </figure>
         </div>
 
@@ -287,9 +284,10 @@
 
     <!-- ============ Quick start ============ -->
     <section class="section section-alt" id="quick-start" aria-labelledby="qs-title">
-      <div class="wrap wrap-narrow">
+      <div class="wrap">
+        <div class="narrow">
         <p class="eyebrow"><svg class="eyebrow-mark" viewBox="0 0 64 64" aria-hidden="true"><polygon points="22.05,7.98 41.95,7.98 56.02,22.05 56.02,41.95 41.95,56.02 22.05,56.02 7.98,41.95 7.98,22.05" fill="none" stroke="currentColor" stroke-width="8"/></svg>Quick start</p>
-        <h2 id="qs-title">Four commands, then a dashboard</h2>
+        <h2 id="qs-title">Clone to dashboard</h2>
         <p class="section-lede">You need a Mac and Node 20 or newer. Clone, configure, install the two workspaces:</p>
 
         <div class="code">
@@ -316,6 +314,7 @@ npm run dev --prefix apps/dashboard</code></pre>
         </div>
 
         <p class="section-lede">Your data lives in one file, <code>infra/db/farm.db</code>, next to the checkout. Delete it and everything is gone. To connect real iPhones, follow the <a href="https://github.com/YannisKiefer/octagon/blob/main/infra/farm/SETUP-GUIDE.md">setup guide</a>: enable Voice Control on each phone, create its custom command, plug in over USB.</p>
+        </div>
       </div>
     </section>
 
@@ -397,10 +396,12 @@ npm run dev --prefix apps/dashboard</code></pre>
 
     <!-- ============ Privacy ============ -->
     <section class="section" id="privacy" aria-labelledby="privacy-title">
-      <div class="wrap wrap-narrow">
+      <div class="wrap">
+        <div class="narrow">
         <p class="eyebrow"><svg class="eyebrow-mark" viewBox="0 0 64 64" aria-hidden="true"><polygon points="22.05,7.98 41.95,7.98 56.02,22.05 56.02,41.95 41.95,56.02 22.05,56.02 7.98,41.95 7.98,22.05" fill="none" stroke="currentColor" stroke-width="8"/></svg>Privacy</p>
         <h2 id="privacy-title">One file. Your machine.</h2>
         <p class="section-lede">All state lives in a single local SQLite file: <code>infra/db/farm.db</code>. Devices, health, tasks, events. Nothing leaves the machine: no telemetry, no accounts, no cloud storage. The MCP server is local stdio only. Delete the file, and everything is gone.</p>
+        </div>
       </div>
     </section>
   </main>
@@ -409,9 +410,7 @@ npm run dev --prefix apps/dashboard</code></pre>
     <div class="wrap footer-grid">
       <div class="footer-col footer-brand">
         <a class="brand" href="./">
-          <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
-            <polygon points="22.05,7.98 41.95,7.98 56.02,22.05 56.02,41.95 41.95,56.02 22.05,56.02 7.98,41.95 7.98,22.05" fill="none" stroke="currentColor" stroke-width="5"/>
-          </svg>
+          <img class="mark" src="assets/logo-reversed.png" alt="" width="28" height="28">
           <span>Octagon</span>
         </a>
         <p>A local-first console for iPhones you own, driven by iOS Voice Control. Free, open source, MIT licensed.</p>
