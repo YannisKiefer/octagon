@@ -77,7 +77,7 @@ ok(!fs.existsSync(path.join(ROOT, "apps/dashboard/app/api/farm/parity")), "parit
 const page = fs.readFileSync(path.join(ROOT, "apps", "dashboard", "app", "page.tsx"), "utf8");
 ok(!/Nachricht|Routinen|Hinzufügen|Einstellungen|Suchen/i.test(page), "UI strings are English");
 ok(!page.includes("FALLBACK_MSGS") && !page.includes("FALLBACK_CROCS"), "no fabricated conversations");
-ok(page.includes("Screen capture not connected"), "screen panel states reality");
+ok(page.includes("Live screen capture requires libimobiledevice"), "screen panel states reality");
 ok(page.includes("No devices yet"), "real empty state exists");
 ok(!/type="file"|accept="video/.test(page), "no fake video upload path");
 ok(!/yannis/i.test(page), "no personal names in the UI");
