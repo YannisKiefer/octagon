@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Standalone output is required by the desktop shell: apps/desktop copies
+  // .next/standalone into the packaged app and runs server.js as a child
+  // process (Electron binary as node) on 127.0.0.1.
+  output: "standalone",
   serverExternalPackages: ["better-sqlite3"],
   allowedDevOrigins: ["*"],
   poweredByHeader: false,

@@ -1,0 +1,64 @@
+# Octagon desktop shell packaging (electron-builder).
+# macOS DMG + ZIP, arm64 first. Code signing / notarization is out of scope
+# (no credentials): identity is null, so the app is unsigned - see
+# apps/desktop/README.md for the Gatekeeper right-click-open step.
+appId: io.octagon.app
+productName: Octagon
+copyright: Octagon
+
+directories:
+  output: release
+  buildResources: build
+
+# main-process files only; the dashboard server + farm runtime ship as
+# extraResources (populated by scripts/prepare-resources.js).
+files:
+  - main.js
+  - preload.js
+  - package.json
+
+extraResources:
+  # node_modules/ inside these trees is dropped by electron-builder's
+  # .gitignore-respecting copy (explicit filters do not override it) and is
+  # re-injected by scripts/after-pack.js before signing.
+  - from: standalone
+    to: standalone
+  - from: farm
+    to: farm
+
+# better-sqlite3 copies are rebuilt for the Electron ABI by
+# scripts/rebuild-native.js (they live in extraResources, outside the
+# electron-builder dependency graph).
+npmRebuild: false
+
+# inject node_modules trees dropped by the .gitignore-respecting copy
+afterPack: scripts/after-pack.js
+
+# ad-hoc signing (identity "-") + strict verify - see scripts/after-sign.js.
+# identity: null only means electron-builder itself does not sign; on arm64 a
+# fully unsigned bundle can be flagged as damaged once quarantined.
+afterSign: scripts/after-sign.js
+
+asar: true
+electronLanguages:
+  - en
+
+mac:
+  category: public.app-category.productivity
+  identity: null
+  hardenedRuntime: false
+  icon: build/icon.png
+  darkModeSupport: true
+  target:
+    - target: dmg
+      arch:
+        - arm64
+    - target: zip
+      arch:
+        - arm64
+
+dmg:
+  title: Octagon ${version}
+  window:
+    width: 540
+    height: 360

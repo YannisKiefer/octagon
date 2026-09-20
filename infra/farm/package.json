@@ -10,7 +10,7 @@
     "session": "node farm-brain.js --slot=1 --prefix=Alpha --duration=30 --dry-run --log"
   },
   "dependencies": {
-    "better-sqlite3": "^12.11.1"
+    "better-sqlite3": "~12.11.1"
   },
   "engines": {
     "node": ">=20"

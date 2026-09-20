@@ -1,6 +1,30 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Activity,
+  Play,
+  CircleCheck,
+  UserRound,
+  Plus,
+  MoreHorizontal,
+  Database,
+  Clock,
+  Link as LinkIcon,
+  Search,
+  FileText,
+  ChevronRight,
+  type LucideIcon,
+} from "lucide-react";
+import {
+  TitleBar,
+  StatusChip,
+  DeviceAvatar,
+  EventMessage,
+  Composer,
+} from "@/components/ui";
+import { PhonePreview, DeviceIdentity } from "@/components/inspector";
 
 // Octagon - local-first console for an iPhone fleet.
 // Everything shown here comes from /api/farm/* and the local SQLite file.
@@ -57,14 +81,47 @@ type SettingsData = {
   reachable: boolean;
 };
 
-const AVATAR_BGS = ["#1F3A2E", "#2A4A3B", "#355A49", "#406857"];
-const SESSION_PRESETS = [5, 10, 15, 30, 60];
+// Avatar colors are keyed by device id so a device keeps its color even if the
+// list reorders. Alpha/Bravo/Charlie/Delta follow the approved reference; any
+// other device gets a stable color derived from its id.
+const AVATAR_COLORS: Record<string, string> = {
+  phone1: "#F59E0B", // Alpha - orange
+  phone2: "#8E8E93", // Bravo - gray
+  phone3: "#8B5CF6", // Charlie - purple
+  phone4: "#3B82F6", // Delta - blue
+};
+const AVATAR_PALETTE = [
+  "#F59E0B",
+  "#8E8E93",
+  "#8B5CF6",
+  "#3B82F6",
+  "#14B8A6",
+  "#EC4899",
+  "#22C55E",
+  "#6366F1",
+];
 
-function avatarBg(id: string): string {
+function avatarColor(id: string): string {
+  const known = AVATAR_COLORS[id];
+  if (known) return known;
   let sum = 0;
   for (let i = 0; i < id.length; i++) sum += id.charCodeAt(i);
-  return AVATAR_BGS[sum % AVATAR_BGS.length];
+  return AVATAR_PALETTE[sum % AVATAR_PALETTE.length];
 }
+
+// Phone artwork persists by device id for the same reason.
+const PHONE_ARTWORK: Record<string, string> = {
+  phone1: "/phones/phone-indigo.png",
+  phone2: "/phones/phone-bronze.png",
+  phone3: "/phones/phone-purple.png",
+  phone4: "/phones/phone-blue.png",
+};
+
+function artworkFor(id: string): string {
+  return PHONE_ARTWORK[id] ?? "/phones/phone-graphite.png";
+}
+
+const SESSION_PRESETS = [5, 10, 15, 30, 60];
 
 // Relative for anything younger than 24h ("4m ago"), clock-and-date after that.
 function fmtTime(iso: string | null | undefined): string {
@@ -109,37 +166,47 @@ function parseDuration(payload: string): number | null {
   }
 }
 
-const STATUS_CHIP: Record<Task["status"], string> = {
-  scheduled: "bg-[#1F3A2E] text-[#A8B5AD]",
-  running: "bg-[rgba(48,209,88,0.15)] text-[#30d158]",
-  succeeded: "bg-[rgba(48,209,88,0.15)] text-[#30d158]",
-  failed: "bg-[rgba(255,69,58,0.15)] text-[#ff453a]",
-  canceled: "bg-[#1F3A2E] text-[#6E7F74]",
-};
-
-function OctagonMark({ size = 18 }: { size?: number }) {
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src="/logo-reversed.png" alt="" width={size} height={size} style={{ borderRadius: 4 }} />
-  );
+// Farm health states ("session", "idle", ...) mapped onto the StatusChip states.
+function deviceChipState(raw: string | undefined): "running" | "idle" | "offline" {
+  const s = (raw || "idle").toLowerCase();
+  if (s === "session" || s === "running" || s === "active") return "running";
+  if (s === "idle") return "idle";
+  return "offline";
 }
 
-function SearchIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6E7F74]">
-      <circle cx="11" cy="11" r="7" />
-      <path d="m21 21-4.3-4.3" />
-    </svg>
-  );
+// Task statuses mapped onto the StatusChip states. "canceled" has no chip
+// state, so it is rendered as a plain neutral chip below (never relabeled).
+function taskChipState(
+  status: Task["status"],
+): "scheduled" | "running" | "completed" | "failed" | null {
+  if (status === "scheduled") return "scheduled";
+  if (status === "running") return "running";
+  if (status === "succeeded") return "completed";
+  if (status === "failed") return "failed";
+  return null;
 }
 
-function MicIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3z" />
-      <path d="M19 11a1 1 0 1 0-2 0 5 5 0 0 1-10 0 1 1 0 1 0-2 0 7 7 0 0 0 6 6.92V20h-2a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.08A7 7 0 0 0 19 11z" />
-    </svg>
-  );
+// Icon per event kind: Activity for hub/status lines, Play for session start,
+// CircleCheck for session finished / queued confirmation, UserRound for user
+// commands. Rendered as an element: EventMessage takes a ReactNode.
+function eventIcon(m: ChatMsg): React.ReactNode {
+  const Icon: LucideIcon = m.side === "right" ? UserRound : iconForText(m.text);
+  return <Icon size={16} strokeWidth={1.75} aria-hidden="true" />;
+}
+
+function iconForText(text: string): LucideIcon {
+  const t = text.toLowerCase();
+  if (t.startsWith("session start")) return Play;
+  if (
+    t.startsWith("session done") ||
+    t.startsWith("session finished") ||
+    t.startsWith("session stopped") ||
+    t.startsWith("task succeeded") ||
+    t.startsWith("queued a")
+  ) {
+    return CircleCheck;
+  }
+  return Activity;
 }
 
 function Modal({
@@ -167,16 +234,16 @@ function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="w-full bg-[#14231B] border border-[#2E4538] rounded-[24px] shadow-2xl overflow-hidden"
+        className="w-full bg-surface border border-hairline rounded-composer shadow-2xl overflow-hidden"
         style={{ maxWidth }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="h-11 flex items-center justify-between px-4 border-b border-[#24382E]">
-          <span className="text-[13px] font-semibold">{title}</span>
+        <div className="h-11 flex items-center justify-between px-4 border-b border-hairline">
+          <span className="text-[13px] font-semibold text-ink">{title}</span>
           <button
             onClick={onClose}
             aria-label="Close dialog"
-            className="w-6 h-6 rounded-full bg-[#1F3A2E] grid place-items-center text-[#A8B5AD] hover:text-[#F8F6F1] text-[11px] leading-none"
+            className="w-6 h-6 rounded-full bg-raised grid place-items-center text-ink-mute hover:text-ink text-[11px] leading-none transition-colors"
           >
             ✕
           </button>
@@ -187,16 +254,28 @@ function Modal({
   );
 }
 
-function DetailRow({ label, value, valueClass = "" }: { label: string; value: string; valueClass?: string }) {
+function DetailRow({
+  icon: Icon,
+  label,
+  value,
+  valueClass = "",
+}: {
+  icon?: LucideIcon;
+  label: string;
+  value: string;
+  valueClass?: string;
+}) {
   return (
-    <div className="flex items-start justify-between gap-4 py-[7px] text-[13px]">
-      <span className="text-[#A8B5AD] shrink-0">{label}</span>
-      <span className={`text-right break-words min-w-0 ${valueClass}`}>{value}</span>
+    <div className="flex items-center gap-3 py-[9px] text-[12.5px]">
+      {Icon && <Icon size={14} strokeWidth={1.75} className="text-ink-mute shrink-0" aria-hidden="true" />}
+      <span className="text-ink-dim shrink-0">{label}</span>
+      <span className={`ml-auto text-right tnum break-words min-w-0 text-ink ${valueClass}`}>{value}</span>
     </div>
   );
 }
 
 export default function OctagonChat() {
+  const router = useRouter();
   const [devices, setDevices] = useState<Device[]>([]);
   const [health, setHealth] = useState<Health[]>([]);
   const [hub, setHub] = useState<HubRow | null>(null);
@@ -212,10 +291,9 @@ export default function OctagonChat() {
 
   const [sel, setSel] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const [modal, setModal] = useState<null | "details" | "add" | "settings" | "session">(null);
   const [settings, setSettings] = useState<SettingsData | null>(null);
@@ -227,11 +305,9 @@ export default function OctagonChat() {
   const [sessionError, setSessionError] = useState("");
   const [sessionPosting, setSessionPosting] = useState(false);
 
-  const [micOk, setMicOk] = useState(false);
-  const [listening, setListening] = useState(false);
-
   const scrollRef = useRef<HTMLDivElement>(null);
-  const recogRef = useRef<any>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const nearBottomRef = useRef(true);
   const selRef = useRef<string | null>(null);
   selRef.current = sel;
 
@@ -253,6 +329,11 @@ export default function OctagonChat() {
   const hubRunning = Boolean(
     hub && hub.active > 0 && Date.now() - new Date(hub.ts).getTime() < 20000,
   );
+  const hubState: "running" | "down" | "checking" = !farmLoaded
+    ? "checking"
+    : hubRunning
+      ? "running"
+      : "down";
 
   const loadFarm = useCallback(async () => {
     try {
@@ -352,37 +433,55 @@ export default function OctagonChat() {
     return () => clearInterval(t);
   }, [loadFarm, loadTasks, loadEvents]);
 
+  // Jump to the bottom when switching devices; afterwards only follow new
+  // events while the reader is already near the bottom.
   useEffect(() => {
+    nearBottomRef.current = true;
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [msgs.length, sel]);
+  }, [sel]);
 
   useEffect(() => {
-    setMicOk(Boolean(
-      typeof window !== "undefined" &&
-        ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition),
-    ));
-  }, []);
+    if (nearBottomRef.current) {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+    }
+  }, [msgs.length]);
 
+  function handleFeedScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    nearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+  }
+
+  // The search field advertises Cmd K, so it actually focuses on Cmd K.
   useEffect(() => {
-    if (!drawerOpen) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setDrawerOpen(false);
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [drawerOpen]);
+  }, []);
 
-  async function send() {
-    const text = input.trim();
-    if (!text || sending || !device) return;
-    setInput("");
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
+  async function send(text: string) {
+    const body = text.trim();
+    if (!body || sending || !device) return;
     setSendError("");
     setSending(true);
     try {
       const res = await fetch("/api/farm/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deviceId: device.id, text }),
+        body: JSON.stringify({ deviceId: device.id, text: body }),
       });
       const j = await res.json().catch(() => null);
       if (res.ok && j?.success) {
@@ -398,28 +497,6 @@ export default function OctagonChat() {
       setSendError("Could not send. The farm API is unreachable.");
     }
     setSending(false);
-  }
-
-  function toggleMic() {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-    if (listening) {
-      recogRef.current?.stop();
-      setListening(false);
-      return;
-    }
-    const rec = new SR();
-    rec.lang = "en-US";
-    rec.interimResults = false;
-    rec.onresult = (e: any) => {
-      const t = e.results?.[0]?.[0]?.transcript;
-      if (t) setInput((prev: string) => (prev ? `${prev} ${t}` : t));
-    };
-    rec.onend = () => setListening(false);
-    rec.onerror = () => setListening(false);
-    recogRef.current = rec;
-    rec.start();
-    setListening(true);
   }
 
   async function addDevice() {
@@ -518,44 +595,53 @@ export default function OctagonChat() {
     setAddError("");
   }
 
-  // ---- shared sidebar content (desktop column and mobile drawer) ----
-  function sidebarContent() {
+  // ---- device rail (left column) ----
+  function railContent() {
     return (
       <>
-        <div className="px-3 pb-2">
+        <div className="px-3 pt-4 pb-2">
           <div className="relative">
-            <SearchIcon />
+            <Search
+              size={14}
+              strokeWidth={1.75}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-mute"
+              aria-hidden="true"
+            />
             <input
+              ref={searchRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search"
+              placeholder="Search devices..."
               aria-label="Search devices"
-              className="w-full bg-[#14231B] border border-[#2E4538] rounded-lg pl-8 pr-3 py-[6px] text-[13px] placeholder:text-[#6E7F74] focus:outline-none focus:border-[#C58E5B]"
+              className="w-full bg-raised border border-hairline rounded-control pl-9 pr-14 py-[7px] text-[13px] text-ink placeholder:text-ink-mute focus:outline-none focus:border-accent transition-colors"
             />
+            <kbd className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[10.5px] leading-none text-ink-mute bg-hover border border-hairline rounded px-1.5 py-1">
+              ⌘ K
+            </kbd>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 space-y-[2px]">
           {farmError === "auth" && (
-            <div className="px-3 py-4 text-[12.5px] text-[#A8B5AD] leading-relaxed">
+            <div className="px-3 py-4 text-[12.5px] text-ink-dim leading-relaxed">
               Sign in required.
               <br />
-              <Link href="/login" className="text-[#F8F6F1] underline underline-offset-2">
+              <Link href="/login" className="text-ink underline underline-offset-2">
                 Go to login
               </Link>
             </div>
           )}
           {farmError === "error" && (
-            <div className="px-3 py-4 text-[12.5px] text-[#A8B5AD] leading-relaxed">
+            <div className="px-3 py-4 text-[12.5px] text-ink-dim leading-relaxed">
               Could not load devices.
               <br />
-              <span className="text-[#6E7F74] break-words">{farmErrorMsg}</span>
+              <span className="text-ink-mute break-words">{farmErrorMsg}</span>
             </div>
           )}
           {farmLoaded && !farmError && devices.length === 0 && (
-            <div className="px-3 py-4 text-[12.5px] text-[#A8B5AD] leading-relaxed">
+            <div className="px-3 py-4 text-[12.5px] text-ink-dim leading-relaxed">
               <p>No devices yet. Add one, or run:</p>
-              <code className="block mt-2 bg-[#14231B] border border-[#2E4538] rounded-lg px-2 py-[6px] text-[11.5px] text-[#F8F6F1] break-all">
+              <code className="block mt-2 bg-raised border border-hairline rounded-control px-2 py-[6px] text-[11.5px] text-ink break-all">
                 node scripts/seed-demo.js
               </code>
             </div>
@@ -563,48 +649,34 @@ export default function OctagonChat() {
           {filtered.map((d) => {
             const dh = health.find((x) => x.device_id === d.id) ?? null;
             const isSel = d.id === device?.id;
-            const state = dh?.session_state || "idle";
             return (
               <button
                 key={d.id}
-                onClick={() => {
-                  setSel(d.id);
-                  setDrawerOpen(false);
-                }}
+                onClick={() => setSel(d.id)}
                 aria-current={isSel ? "true" : undefined}
-                className={`w-full flex items-start gap-[10px] px-2 py-[9px] rounded-xl text-left transition-colors ${
-                  isSel ? "bg-[#1F3A2E]" : "hover:bg-[#182A20]"
+                className={`relative w-full flex items-start gap-[10px] px-2.5 py-[9px] rounded-control text-left transition-colors ${
+                  isSel ? "bg-selected" : "hover:bg-hover"
                 }`}
               >
-                <span
-                  className="w-9 h-9 rounded-full grid place-items-center text-[15px] font-semibold shrink-0"
-                  style={{ background: avatarBg(d.id) }}
-                  aria-hidden="true"
-                >
-                  {(d.voice_prefix[0] || "?").toUpperCase()}
-                </span>
+                {isSel && (
+                  <span
+                    className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-accent"
+                    aria-hidden="true"
+                  />
+                )}
+                <DeviceAvatar name={d.voice_prefix} color={avatarColor(d.id)} size={40} />
                 <span className="flex-1 min-w-0">
                   <span className="flex items-center gap-[6px]">
-                    <span className="text-[13.5px] font-semibold leading-tight truncate">
+                    <span className="text-[13.5px] font-semibold leading-tight truncate text-ink">
                       {d.voice_prefix}
                     </span>
-                    <span className="ml-auto text-[11px] text-[#6E7F74] shrink-0">
+                    <span className="ml-auto text-[11px] text-ink-mute tnum shrink-0">
                       {fmtTime(dh?.updated_at || d.updated_at)}
                     </span>
                   </span>
-                  <span className="flex items-center gap-[6px] mt-[3px]">
-                    <span
-                      className={`text-[10.5px] px-[6px] py-[1px] rounded-md ${
-                        state === "session" || state === "running"
-                          ? "bg-[rgba(48,209,88,0.15)] text-[#30d158]"
-                          : state === "idle"
-                            ? "bg-[#1F3A2E] text-[#A8B5AD]"
-                            : "bg-[rgba(245,158,11,0.15)] text-[#f59e0b]"
-                      }`}
-                    >
-                      {state}
-                    </span>
-                    <span className="text-[12px] text-[#A8B5AD] truncate">
+                  <span className="flex items-center gap-[6px] mt-[4px]">
+                    <StatusChip state={deviceChipState(dh?.session_state)} />
+                    <span className="text-[12px] text-ink-dim tnum truncate">
                       {(dh?.swipes ?? 0).toLocaleString("en-US")} swipes
                     </span>
                   </span>
@@ -613,27 +685,26 @@ export default function OctagonChat() {
             );
           })}
           {farmLoaded && !farmError && devices.length > 0 && filtered.length === 0 && (
-            <div className="px-3 py-4 text-[12.5px] text-[#6E7F74]">No device matches.</div>
+            <div className="px-3 py-4 text-[12.5px] text-ink-mute">No device matches.</div>
           )}
         </div>
 
-        <div className="px-2 pb-3 pt-1">
+        <div className="px-3 pb-3 pt-1">
           <button
             onClick={() => {
               setAddPrefix("");
               setAddError("");
               setModal("add");
-              setDrawerOpen(false);
             }}
-            className="w-full flex items-center gap-[10px] px-2 py-[8px] rounded-xl hover:bg-[#182A20] text-left transition-colors"
+            className="w-full flex items-center gap-[10px] px-2.5 py-2 rounded-control bg-surface border border-hairline hover:bg-hover text-left transition-colors"
           >
             <span
-              className="w-7 h-7 rounded-full border border-dashed border-[#C58E5B] grid place-items-center text-[#A8B5AD]"
+              className="w-7 h-7 rounded-full bg-raised grid place-items-center text-ink-dim shrink-0"
               aria-hidden="true"
             >
-              +
+              <Plus size={15} strokeWidth={1.75} />
             </span>
-            <span className="text-[13.5px] font-medium text-[#A8B5AD]">Add device</span>
+            <span className="text-[13.5px] font-medium text-ink-dim">Add device</span>
           </button>
         </div>
       </>
@@ -641,102 +712,95 @@ export default function OctagonChat() {
   }
 
   return (
-    <div className="h-dvh flex flex-col bg-[#0F1F17] text-[#F8F6F1] overflow-hidden">
-      {/* Titlebar */}
-      <header className="h-12 shrink-0 flex items-center gap-3 pl-3 pr-4 border-b border-[#24382E]">
-        <button
-          onClick={() => setDrawerOpen(true)}
-          aria-label="Open device list"
-          className="md:hidden w-8 h-8 rounded-lg hover:bg-[#182A20] grid place-items-center text-[#A8B5AD]"
-        >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-            <path d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-        <OctagonMark />
-        <span className="text-[13px] font-semibold text-[#A8B5AD] tracking-wide">Octagon</span>
-
-        <div className="ml-auto flex items-center gap-4">
-          <span
-            className={`flex items-center gap-1.5 text-[12px] ${
-              farmLoaded && hubRunning ? "text-[#A8B5AD]" : "text-[#6E7F74]"
-            }`}
-            title={hub?.ts ? `Hub heartbeat: ${hub.ts}` : "No hub heartbeat recorded"}
-          >
-            {farmLoaded && hubRunning && (
-              <span className="w-[7px] h-[7px] rounded-full bg-[#30d158]" aria-hidden="true" />
-            )}
-            {!farmLoaded ? "Checking hub" : hubRunning ? "Hub running" : "Hub not running"}
-          </span>
-          <button
-            onClick={openSettings}
-            aria-label="Settings"
-            title="Settings"
-            className="w-8 h-8 rounded-lg hover:bg-[#182A20] grid place-items-center text-[#A8B5AD] hover:text-[#F8F6F1] transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-          </button>
-        </div>
-      </header>
+    <div className="h-dvh flex flex-col bg-canvas text-ink overflow-hidden">
+      <TitleBar
+        hub={hubState}
+        view="conversation"
+        onViewChange={(v) => router.push(v === "fleet" ? "/dashboard" : "/")}
+        onOpenSettings={openSettings}
+      />
 
       <div className="flex flex-1 min-h-0">
-        {/* Sidebar (desktop) */}
-        <aside className="hidden md:flex w-[275px] shrink-0 bg-[#14231B] border-r border-[#24382E] flex-col">
-          {sidebarContent()}
+        {/* Device rail */}
+        <aside className="hidden md:flex w-[280px] shrink-0 bg-sidebar border-r border-hairline flex-col">
+          {railContent()}
         </aside>
 
-        {/* Chat */}
-        <main className="flex-1 min-w-0 flex flex-col bg-[#0F1F17]">
-          <div className="h-[52px] shrink-0 flex items-center gap-[10px] px-4 md:px-5">
+        {/* Conversation */}
+        <main className="flex-1 min-w-0 flex flex-col bg-canvas">
+          <div className="h-[64px] shrink-0 flex items-center gap-3 px-5">
             {device ? (
               <>
-                <button
-                  onClick={() => setModal("details")}
-                  aria-label={`Open details for ${device.voice_prefix}`}
-                  className="flex items-center gap-[10px] min-w-0 rounded-lg"
-                >
-                  <span
-                    className="w-[34px] h-[34px] rounded-full grid place-items-center text-[14px] font-semibold shrink-0"
-                    style={{ background: avatarBg(device.id) }}
-                    aria-hidden="true"
-                  >
-                    {(device.voice_prefix[0] || "?").toUpperCase()}
+                {/* Screen capture never exists in this build, so the header
+                    shows the colored initial avatar, not artwork. */}
+                <DeviceIdentity
+                  name={device.voice_prefix}
+                  sub={device.id}
+                  artwork={null}
+                  color={avatarColor(device.id)}
+                />
+                <div className="ml-auto flex items-center gap-2.5 shrink-0">
+                  <StatusChip state={deviceChipState(h?.session_state)} />
+                  <span className="text-[12px] text-ink-dim tnum">
+                    {(h?.swipes ?? 0).toLocaleString("en-US")} swipes
                   </span>
-                  <span className="leading-tight min-w-0 text-left">
-                    <span className="block text-[14px] font-semibold truncate">
-                      {device.voice_prefix}
-                    </span>
-                    <span className="block text-[12px] text-[#6E7F74] truncate">{device.id}</span>
-                  </span>
-                </button>
-                <span className="ml-auto text-[11.5px] text-[#A8B5AD] shrink-0">
-                  {h?.session_state || "idle"} · {(h?.swipes ?? 0).toLocaleString("en-US")} swipes
-                </span>
+                  <div className="relative">
+                    <button
+                      onClick={() => setMenuOpen((o) => !o)}
+                      aria-label={`Menu for ${device.voice_prefix}`}
+                      aria-expanded={menuOpen}
+                      className="w-8 h-8 rounded-control grid place-items-center text-ink-mute hover:text-ink hover:bg-hover transition-colors"
+                    >
+                      <MoreHorizontal size={16} strokeWidth={1.75} />
+                    </button>
+                    {menuOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setMenuOpen(false)}
+                          aria-hidden="true"
+                        />
+                        <div className="absolute right-0 top-9 z-20 min-w-[170px] bg-surface border border-hairline rounded-control shadow-2xl py-1">
+                          <button
+                            onClick={() => {
+                              setMenuOpen(false);
+                              setModal("details");
+                            }}
+                            className="w-full text-left px-3 py-2 text-[13px] text-ink hover:bg-hover transition-colors"
+                          >
+                            Device details
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </>
             ) : (
-              <span className="text-[13px] text-[#6E7F74]">Octagon</span>
+              <span className="text-[13px] text-ink-mute">Octagon</span>
             )}
           </div>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-6 pb-4">
+          <div
+            ref={scrollRef}
+            onScroll={handleFeedScroll}
+            className="flex-1 overflow-y-auto px-5 md:px-6 py-4"
+          >
             {msgError && (
-              <p className="text-center text-[12px] text-[#A8B5AD] py-3" role="alert">
+              <p className="text-center text-[12px] text-ink-dim py-3" role="alert">
                 Could not load messages for this device.
               </p>
             )}
             {!device && (
               <div className="h-full grid place-items-center">
-                <p className="text-[13px] text-[#6E7F74] text-center px-6">
+                <p className="text-[13px] text-ink-mute text-center px-6">
                   Add a device to start chatting.
                 </p>
               </div>
             )}
             {device && !msgError && msgs.length === 0 && (
               <div className="h-full grid place-items-center">
-                <p className="text-[13px] text-[#6E7F74] text-center px-6">
+                <p className="text-[13px] text-ink-mute text-center px-6">
                   No messages yet. Try {'"run 20"'}, {'"status"'}, or {'"stop"'}.
                 </p>
               </div>
@@ -746,193 +810,169 @@ export default function OctagonChat() {
               return (
                 <div key={m.ts + ":" + i} className="mb-4">
                   {showDay && (
-                    <div className="flex justify-center py-2 mb-2">
-                      <span className="text-[11px] text-[#6E7F74] bg-[#14231B] rounded-full px-3 py-1">
+                    <div className="flex justify-center py-2 mb-3">
+                      <span className="text-[11px] text-ink-mute bg-raised border border-hairline rounded-full px-3 py-1">
                         {dayLabel(m.ts)}
                       </span>
                     </div>
                   )}
-                  <div
-                    className={`text-[11px] text-[#6E7F74] mb-[6px] ${
-                      m.side === "right" ? "text-right pr-1" : "pl-1"
-                    }`}
-                  >
-                    {fmtTime(m.ts)}
-                  </div>
-                  <div
-                    className={`max-w-[85%] md:max-w-[68%] rounded-[18px] px-[14px] py-[10px] text-[13.5px] leading-[1.5] whitespace-pre-wrap break-words ${
-                      m.side === "right" ? "ml-auto bg-[#1F3A2E]" : "bg-[#182A20]"
-                    } ${m.side === "left" && m.level === "error" ? "border-l-2 border-[#ff453a]" : ""}`}
-                  >
-                    {m.text}
-                  </div>
+                  <EventMessage
+                    icon={eventIcon(m)}
+                    text={m.text}
+                    ts={fmtTime(m.ts)}
+                    side={m.side === "right" ? "user" : "agent"}
+                    iconTone={m.level === "error" ? "error" : "default"}
+                  />
                 </div>
               );
             })}
           </div>
 
           {/* Composer */}
-          <div className="px-4 pb-4">
+          <div className="px-5 pb-4 shrink-0">
             {sendError && (
-              <p className="text-[12px] text-[#ff453a] mb-2" role="alert">
+              <p className="text-[12px] text-danger mb-2" role="alert">
                 {sendError}
               </p>
             )}
-            <div className="flex items-center gap-2 bg-[#14231B] border border-[#2E4538] focus-within:border-[#C58E5B] rounded-full pl-4 pr-2 py-[7px] transition-colors">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    send();
-                  }
-                }}
-                disabled={!device}
-                placeholder={
-                  device
-                    ? `Message ${device.voice_prefix} - try "run 20", "status", or "stop"`
-                    : "Add a device first"
-                }
-                aria-label="Message input"
-                className="flex-1 min-w-0 bg-transparent outline-none text-[13.5px] placeholder:text-[#6E7F74] disabled:opacity-50"
-              />
-              <button
-                onClick={toggleMic}
-                disabled={!micOk || !device}
-                title={micOk ? (listening ? "Stop dictation" : "Dictate") : "Not supported in this browser"}
-                aria-label={micOk ? (listening ? "Stop dictation" : "Start dictation") : "Dictation not supported in this browser"}
-                aria-pressed={listening}
-                className={`w-[30px] h-[30px] rounded-full grid place-items-center shrink-0 transition-colors ${
-                  listening
-                    ? "bg-[#C58E5B] text-[#0F1F17]"
-                    : "bg-[#F8F6F1] text-[#0F1F17] hover:bg-[#E9E6DE]"
-                } disabled:opacity-40 disabled:cursor-not-allowed`}
-              >
-                <MicIcon />
-              </button>
-            </div>
+            <Composer
+              placeholder={
+                device
+                  ? `Message ${device.voice_prefix} - try "run 20", "status", or "stop"`
+                  : "Add a device first"
+              }
+              onSend={send}
+              disabled={!device}
+            />
           </div>
         </main>
 
-        {/* Device panel (desktop) */}
-        {device && (
-          <aside className="hidden lg:flex w-[340px] shrink-0 bg-[#14231B] border-l border-[#24382E] flex-col overflow-y-auto">
-            <div className="px-5 py-5">
-              <p className="text-[12.5px] text-[#A8B5AD] text-center mb-2">
-                Screen of {device.voice_prefix}
-              </p>
-              <button
-                onClick={() => setModal("details")}
-                className="w-full aspect-[4/3] bg-[#14231B] border border-[#2E4538] rounded-xl grid place-items-center hover:border-[#3A5443] transition-colors px-6"
-              >
-                <span className="flex flex-col items-center gap-2 text-center">
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6E7F74" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
-                    <rect x="7" y="2.5" width="10" height="19" rx="2.5" />
-                    <path d="M3 3l18 18" />
-                  </svg>
-                  <span className="text-[13px] font-medium text-[#A8B5AD]">
-                    Screen capture not connected
-                  </span>
-                  <span className="text-[11.5px] text-[#6E7F74] leading-relaxed">
-                    Live screen capture requires libimobiledevice and the device UDID (see setup
-                    guide).
-                  </span>
-                </span>
-              </button>
-
-              <div className="mt-5 text-[13px]">
-                <DetailRow label="State" value={h?.session_state || "idle"} />
-                <DetailRow label="Swipes" value={(h?.swipes ?? 0).toLocaleString("en-US")} />
-                <DetailRow
-                  label="Last action"
-                  value={h?.last_action ? `${h.last_action}, ${fmtTime(h.last_action_at)}` : "none"}
+        {/* Inspector */}
+        <aside className="hidden lg:flex w-[350px] shrink-0 bg-sidebar border-l border-hairline flex-col overflow-y-auto">
+          {device ? (
+            <div className="px-4 py-4">
+              {/* Screen preview */}
+              <section>
+                <h2 className="text-sm font-semibold text-ink mb-2.5">
+                  Screen of {device.voice_prefix}
+                </h2>
+                <PhonePreview
+                  artwork={artworkFor(device.id)}
+                  state="unavailable"
+                  note="Live screen capture requires libimobiledevice and the device UDID (see setup guide)."
                 />
-                <DetailRow label="USB connected" value={h?.usb_connected ? "Yes" : "No"} />
-              </div>
+              </section>
 
-              {h?.error && (
-                <div
-                  className="mt-3 rounded-xl border border-[rgba(245,158,11,0.4)] bg-[rgba(245,158,11,0.1)] px-3 py-2 text-[12.5px] text-[#f59e0b] break-words"
-                  role="alert"
-                >
-                  {h.error}
+              {/* Device details */}
+              <section className="mt-5">
+                <h2 className="text-sm font-semibold text-ink mb-2.5">Device details</h2>
+                <div className="bg-surface border border-hairline rounded-card px-3.5 py-1.5">
+                  <DetailRow icon={Activity} label="State" value={h?.session_state || "idle"} />
+                  <DetailRow
+                    icon={Database}
+                    label="Swipes"
+                    value={(h?.swipes ?? 0).toLocaleString("en-US")}
+                  />
+                  <DetailRow
+                    icon={Clock}
+                    label="Last action"
+                    value={h?.last_action ? `${h.last_action}, ${fmtTime(h.last_action_at)}` : "none"}
+                  />
+                  <DetailRow
+                    icon={LinkIcon}
+                    label="USB connected"
+                    value={h?.usb_connected ? "Yes" : "No"}
+                  />
                 </div>
-              )}
-
-              <div className="flex items-center justify-between mt-6 mb-2">
-                <span className="text-[15px] font-semibold">Sessions</span>
-              </div>
-              {tasksError && (
-                <p className="text-[12px] text-[#A8B5AD] py-1" role="alert">
-                  Could not load sessions.
-                </p>
-              )}
-              <div className="space-y-[6px]">
-                {deviceTasks.map((t) => {
-                  const mins = parseDuration(t.payload);
-                  return (
-                    <div key={t.id} className="px-2 py-[8px] rounded-xl hover:bg-[#182A20]">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13.5px] font-medium truncate flex-1 min-w-0">
-                          Pacing session{mins !== null ? ` - ${mins} min` : ""}
-                        </span>
-                        <span
-                          className={`text-[10.5px] px-[7px] py-[2px] rounded-md shrink-0 ${
-                            STATUS_CHIP[t.status]
-                          }`}
-                        >
-                          {t.status}
-                        </span>
-                      </div>
-                      <div className="text-[12px] text-[#A8B5AD] mt-[2px]">
-                        {fmtTime(t.scheduled_for)}
-                      </div>
-                      {t.status === "failed" && t.error && (
-                        <div
-                          className="mt-1 text-[12px] text-[#ff453a] break-words"
-                          role="alert"
-                        >
-                          {t.error}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {!tasksError && deviceTasks.length === 0 && (
-                  <p className="text-[12.5px] text-[#6E7F74] px-2 py-1">No sessions yet.</p>
+                {h?.error && (
+                  <div
+                    className="mt-3 rounded-card border border-[rgba(245,165,36,0.4)] bg-[rgba(245,165,36,0.1)] px-3 py-2 text-[12.5px] text-warning break-words"
+                    role="alert"
+                  >
+                    {h.error}
+                  </div>
                 )}
-              </div>
+              </section>
 
-              <button
-                onClick={() => {
-                  setSessionMinutes("");
-                  setSessionError("");
-                  setModal("session");
-                }}
-                className="mt-4 mb-2 w-full bg-[#C58E5B] hover:bg-[#D9A76F] text-[#0F1F17] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
-              >
-                New session
-              </button>
+              {/* Sessions */}
+              <section className="mt-5">
+                <div className="flex items-center justify-between mb-2.5">
+                  <h2 className="text-sm font-semibold text-ink">Sessions</h2>
+                  <ChevronRight size={16} strokeWidth={1.75} className="text-ink-mute" aria-hidden="true" />
+                </div>
+                <div className="bg-surface border border-hairline rounded-card p-3">
+                  {tasksError && (
+                    <p className="text-[12px] text-ink-dim py-1" role="alert">
+                      Could not load sessions.
+                    </p>
+                  )}
+                  <div className="space-y-1">
+                    {deviceTasks.map((t) => {
+                      const mins = parseDuration(t.payload);
+                      const chip = taskChipState(t.status);
+                      return (
+                        <div key={t.id} className="px-2 py-[8px] rounded-control hover:bg-hover">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[13px] font-medium truncate flex-1 min-w-0 text-ink">
+                              Pacing session{mins !== null ? ` - ${mins} min` : ""}
+                            </span>
+                            {chip ? (
+                              <StatusChip state={chip} />
+                            ) : (
+                              <span className="text-[10.5px] px-[7px] py-[2px] rounded-md bg-raised border border-hairline text-ink-mute shrink-0">
+                                {t.status}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11.5px] text-ink-mute tnum mt-[2px]">
+                            {fmtTime(t.scheduled_for)}
+                          </div>
+                          {t.status === "failed" && t.error && (
+                            <div className="mt-1 text-[12px] text-danger break-words" role="alert">
+                              {t.error}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {!tasksError && deviceTasks.length === 0 && (
+                      <div className="flex items-start gap-3 py-1.5 px-1">
+                        <span
+                          className="w-9 h-9 rounded-full bg-raised grid place-items-center text-ink-mute shrink-0"
+                          aria-hidden="true"
+                        >
+                          <FileText size={15} strokeWidth={1.75} />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-[12.5px] text-ink">No sessions yet.</span>
+                          <span className="block text-[11.5px] text-ink-mute mt-0.5 leading-relaxed">
+                            Start a new session to see activity here.
+                          </span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSessionMinutes("");
+                      setSessionError("");
+                      setModal("session");
+                    }}
+                    className="mt-3 w-full bg-white hover:bg-[#E8ECF2] text-[#0B0E12] rounded-full py-[10px] text-[13.5px] font-semibold flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Play size={13} fill="currentColor" aria-hidden="true" />
+                    New session
+                  </button>
+                </div>
+              </section>
             </div>
-          </aside>
-        )}
+          ) : (
+            <p className="text-[13px] text-ink-mute px-4 py-6">
+              Add a device to see its screen, details and sessions.
+            </p>
+          )}
+        </aside>
       </div>
-
-      {/* Mobile drawer */}
-      {drawerOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
-          <div className="absolute inset-0 bg-black/70" onClick={() => setDrawerOpen(false)} />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Devices"
-            className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-[#14231B] border-r border-[#24382E] flex flex-col"
-          >
-            {sidebarContent()}
-          </div>
-        </div>
-      )}
 
       {/* Device details modal */}
       {modal === "details" && device && (
@@ -952,19 +992,19 @@ export default function OctagonChat() {
             <DetailRow label="Health updated" value={fmtTime(h?.updated_at)} />
             {h?.error && (
               <div
-                className="mt-3 rounded-xl border border-[rgba(245,158,11,0.4)] bg-[rgba(245,158,11,0.1)] px-3 py-2 text-[12.5px] text-[#f59e0b] break-words"
+                className="mt-3 rounded-card border border-[rgba(245,165,36,0.4)] bg-[rgba(245,165,36,0.1)] px-3 py-2 text-[12.5px] text-warning break-words"
                 role="alert"
               >
                 {h.error}
               </div>
             )}
-            <p className="mt-4 text-[11.5px] text-[#6E7F74] leading-relaxed">
+            <p className="mt-4 text-[11.5px] text-ink-mute leading-relaxed">
               Screen capture is not connected. Live screen capture requires libimobiledevice and
               the device UDID (see setup guide).
             </p>
             <button
               onClick={() => setModal(null)}
-              className="mt-4 w-full border border-[#2E4538] text-[#F8F6F1] hover:bg-[#182A20] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
+              className="mt-4 w-full border border-hairline text-ink hover:bg-hover rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
             >
               Close
             </button>
@@ -976,7 +1016,7 @@ export default function OctagonChat() {
       {modal === "add" && (
         <Modal title="Add device" onClose={closeAndResetAdd} maxWidth={360}>
           <div className="p-4 space-y-3">
-            <label htmlFor="prefix" className="block text-[12px] text-[#A8B5AD]">
+            <label htmlFor="prefix" className="block text-[12px] text-ink-dim">
               Voice prefix
             </label>
             <input
@@ -988,22 +1028,22 @@ export default function OctagonChat() {
               }}
               placeholder="e.g. Alpha"
               autoFocus
-              className="w-full bg-[#14231B] border border-[#2E4538] rounded-lg px-3 py-[8px] text-[13.5px] placeholder:text-[#6E7F74] focus:outline-none focus:border-[#C58E5B]"
+              className="w-full bg-raised border border-hairline rounded-control px-3 py-[8px] text-[13.5px] text-ink placeholder:text-ink-mute focus:outline-none focus:border-accent transition-colors"
             />
-            <p className="text-[11.5px] text-[#6E7F74] leading-relaxed">
+            <p className="text-[11.5px] text-ink-mute leading-relaxed">
               {`On the iPhone, create a Voice Control custom command named "${
                 addPrefix.trim() || "Alpha"
               } Swipe Next" that performs a swipe-up.`}
             </p>
             {addError && (
-              <p className="text-[12px] text-[#ff453a]" role="alert">
+              <p className="text-[12px] text-danger" role="alert">
                 {addError}
               </p>
             )}
             <button
               onClick={addDevice}
               disabled={adding || addPrefix.trim().length < 2}
-              className="w-full bg-[#C58E5B] hover:bg-[#D9A76F] disabled:opacity-40 text-[#0F1F17] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
+              className="w-full bg-white hover:bg-[#E8ECF2] disabled:opacity-40 text-[#0B0E12] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
             >
               {adding ? "Adding" : "Add device"}
             </button>
@@ -1013,9 +1053,13 @@ export default function OctagonChat() {
 
       {/* New session modal */}
       {modal === "session" && device && (
-        <Modal title={`New session - ${device.voice_prefix}`} onClose={() => setModal(null)} maxWidth={360}>
+        <Modal
+          title={`New session - ${device.voice_prefix}`}
+          onClose={() => setModal(null)}
+          maxWidth={360}
+        >
           <div className="p-4 space-y-3">
-            <span className="block text-[12px] text-[#A8B5AD]">Duration (minutes)</span>
+            <span className="block text-[12px] text-ink-dim">Duration (minutes)</span>
             <div className="flex flex-wrap gap-2">
               {SESSION_PRESETS.map((n) => (
                 <button
@@ -1024,8 +1068,8 @@ export default function OctagonChat() {
                   aria-pressed={sessionMinutes === String(n)}
                   className={`px-3 py-[6px] rounded-full text-[13px] border transition-colors ${
                     sessionMinutes === String(n)
-                      ? "bg-[#1F3A2E] border-[#C58E5B] text-[#F8F6F1]"
-                      : "bg-[#14231B] border-[#2E4538] text-[#A8B5AD] hover:border-[#3A5443]"
+                      ? "bg-hover border-accent text-ink"
+                      : "bg-raised border-hairline text-ink-dim hover:border-hairline-strong"
                   }`}
                 >
                   {n}
@@ -1041,22 +1085,22 @@ export default function OctagonChat() {
                 onChange={(e) => setSessionMinutes(e.target.value)}
                 placeholder="Custom"
                 aria-label="Custom duration in minutes"
-                className="w-full bg-[#14231B] border border-[#2E4538] rounded-lg px-3 py-[8px] text-[13.5px] placeholder:text-[#6E7F74] focus:outline-none focus:border-[#C58E5B]"
+                className="w-full bg-raised border border-hairline rounded-control px-3 py-[8px] text-[13.5px] text-ink placeholder:text-ink-mute focus:outline-none focus:border-accent transition-colors"
               />
-              <span className="text-[12px] text-[#6E7F74] shrink-0">min</span>
+              <span className="text-[12px] text-ink-mute shrink-0">min</span>
             </div>
-            <p className="text-[11.5px] text-[#6E7F74] leading-relaxed">
+            <p className="text-[11.5px] text-ink-mute leading-relaxed">
               The session runs while the hub is up. In dry-run mode nothing is spoken aloud.
             </p>
             {sessionError && (
-              <p className="text-[12px] text-[#ff453a]" role="alert">
+              <p className="text-[12px] text-danger" role="alert">
                 {sessionError}
               </p>
             )}
             <button
               onClick={scheduleSession}
               disabled={sessionPosting}
-              className="w-full bg-[#C58E5B] hover:bg-[#D9A76F] disabled:opacity-40 text-[#0F1F17] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
+              className="w-full bg-white hover:bg-[#E8ECF2] disabled:opacity-40 text-[#0B0E12] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
             >
               {sessionPosting ? "Scheduling" : "Schedule session"}
             </button>
@@ -1068,7 +1112,7 @@ export default function OctagonChat() {
       {modal === "settings" && (
         <Modal title="Settings" onClose={() => setModal(null)}>
           <div className="p-4 text-[13px]">
-            {settingsLoading && <p className="text-[#A8B5AD] py-2">Checking</p>}
+            {settingsLoading && <p className="text-ink-dim py-2">Checking</p>}
             {!settingsLoading && settings && (
               <>
                 <DetailRow
@@ -1076,9 +1120,9 @@ export default function OctagonChat() {
                   value={settings.status}
                   valueClass={
                     settings.status === "healthy"
-                      ? "text-[#30d158]"
+                      ? "text-success"
                       : settings.status === "degraded"
-                        ? "text-[#f59e0b]"
+                        ? "text-warning"
                         : ""
                   }
                 />
@@ -1087,7 +1131,7 @@ export default function OctagonChat() {
                 <DetailRow
                   label="Cloud"
                   value="None - everything stays on this Mac"
-                  valueClass="text-[#C58E5B]"
+                  valueClass="text-accent"
                 />
                 <DetailRow
                   label="Checked at"

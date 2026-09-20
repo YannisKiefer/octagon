@@ -131,6 +131,10 @@ export function ensureFarmSchema(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_farm_tasks_scheduled ON farm_tasks(scheduled_for);
     CREATE INDEX IF NOT EXISTS idx_farm_tasks_status ON farm_tasks(status);
     CREATE INDEX IF NOT EXISTS idx_farm_tasks_device ON farm_tasks(device_id);
+    -- Summary dashboard: queue scan (status IN scheduled/running ORDER BY scheduled_for)
+    -- and time-window scans on started_at.
+    CREATE INDEX IF NOT EXISTS idx_farm_tasks_status_scheduled ON farm_tasks(status, scheduled_for);
+    CREATE INDEX IF NOT EXISTS idx_farm_tasks_started_at ON farm_tasks(started_at);
 
     CREATE TABLE IF NOT EXISTS farm_events (
       id TEXT PRIMARY KEY,
@@ -245,4 +249,163 @@ export function createFarmDevice(prefix: string, displayName?: string): FarmDevi
   db.prepare("INSERT INTO farm_device_health (device_id, usb_connected, session_state, updated_at) VALUES (?, 0, 'idle', ?)")
     .run(id, now);
   return db.prepare("SELECT * FROM farm_devices WHERE id = ?").get(id) as FarmDevice;
+}
+
+// ---------------------------------------------------------------------------
+// Read-only summary for GET /api/farm/summary (dashboard overview tiles).
+// ---------------------------------------------------------------------------
+
+export type FarmSummaryQueueItem = {
+  id: string;
+  title: string;
+  device: string;
+  status: string;
+  createdAt: string;
+};
+
+export type FarmSummaryEventItem = {
+  id: string;
+  ts: string;
+  deviceId: string | null;
+  text: string;
+};
+
+export type FarmSummary = {
+  rangeHours: number;
+  devices: { online: number; total: number };
+  sessions: { active: number; startedInRange: number };
+  swipes: { count: number; deltaPct: number | null };
+  successRate: { pct: number | null; sampleCount: number };
+  avgCycleTime: { seconds: number | null; sampleCount: number };
+  queue: FarmSummaryQueueItem[];
+  recentEvents: FarmSummaryEventItem[];
+};
+
+type FinishedTaskRow = { status: string; started_at: string | null; finished_at: string | null };
+type QueueTaskRow = { id: string; type: string; device_id: string | null; status: string; payload: string; created_at: string };
+type EventRow = { id: string; ts: string; device_id: string | null; event: string };
+
+// swipes.count is the SUM of the CURRENT farm_device_health.swipes counters.
+// Those are LIFETIME counters, not per-window deltas: the health table stores
+// one running total per device and we keep no historical snapshots, so a
+// window-over-window delta cannot be computed yet. deltaPct is therefore
+// always null for now; the UI renders the delta chip only when it is non-null.
+function humanizeTaskTitle(type: string, payload: string): string {
+  if (type !== "session") return type;
+  try {
+    const parsed = JSON.parse(payload || "{}") as { duration_minutes?: unknown };
+    const minutes = Number(parsed?.duration_minutes);
+    if (Number.isFinite(minutes) && minutes > 0) {
+      return `Pacing session - ${Math.round(minutes)} min`;
+    }
+  } catch {
+    // Malformed payload: fall through to the generic title.
+  }
+  return "Pacing session";
+}
+
+export function getFarmSummary(rangeHours: number): FarmSummary {
+  // Defensive clamp; the API route validates too.
+  const n = Number(rangeHours);
+  const hours = Number.isFinite(n) ? Math.min(168, Math.max(1, Math.round(n))) : 24;
+  const windowStartIso = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+
+  const db = getFarmDb({ readonly: true });
+
+  // Each query is fault-tolerant so a fresh/odd DB yields zeros and nulls
+  // (success:true) instead of a 500. Schema is normally auto-created by
+  // ensureFarmSchema on first RW open, so these only trip on real corruption.
+  const safe = <T>(fn: () => T, fallback: T): T => {
+    try {
+      return fn();
+    } catch {
+      return fallback;
+    }
+  };
+
+  const count = (stmt: Database.Statement, ...params: unknown[]) =>
+    safe(() => (stmt.get(...params) as { c: number }).c, 0);
+
+  const online = count(db.prepare("SELECT COUNT(*) AS c FROM farm_device_health WHERE usb_connected = 1"));
+  const total = count(db.prepare("SELECT COUNT(*) AS c FROM farm_devices WHERE active = 1"));
+  const swipesTotal = count(db.prepare("SELECT COALESCE(SUM(swipes), 0) AS c FROM farm_device_health"));
+  const sessionsActive = count(db.prepare("SELECT COUNT(*) AS c FROM farm_tasks WHERE status = 'running'"));
+  const startedInRange = count(
+    db.prepare("SELECT COUNT(*) AS c FROM farm_tasks WHERE started_at IS NOT NULL AND started_at >= ?"),
+    windowStartIso,
+  );
+
+  // Finished tasks that STARTED inside the window drive successRate and
+  // avgCycleTime (durations need both timestamps, computed per row).
+  const finishedRows = safe(
+    () => db
+      .prepare(
+        `SELECT status, started_at, finished_at FROM farm_tasks
+         WHERE started_at IS NOT NULL AND started_at >= ? AND status IN ('succeeded', 'failed')`,
+      )
+      .all(windowStartIso) as unknown as FinishedTaskRow[],
+    [] as FinishedTaskRow[],
+  );
+
+  let succeeded = 0;
+  let failed = 0;
+  let cycleSumSeconds = 0;
+  let cycleSamples = 0;
+  for (const row of finishedRows) {
+    if (row.status === "succeeded") {
+      succeeded++;
+      const startedMs = row.started_at ? Date.parse(row.started_at) : NaN;
+      const finishedMs = row.finished_at ? Date.parse(row.finished_at) : NaN;
+      if (Number.isFinite(startedMs) && Number.isFinite(finishedMs) && finishedMs >= startedMs) {
+        cycleSumSeconds += (finishedMs - startedMs) / 1000;
+        cycleSamples++;
+      }
+    } else {
+      failed++;
+    }
+  }
+
+  const finishedSamples = succeeded + failed;
+  const successPct = finishedSamples >= 3 ? Math.round((succeeded / finishedSamples) * 1000) / 10 : null;
+  const avgCycleSeconds = cycleSamples >= 3 ? Math.round((cycleSumSeconds / cycleSamples) * 10) / 10 : null;
+
+  const queueRows = safe(
+    () => db
+      .prepare(
+        `SELECT id, type, device_id, status, payload, created_at FROM farm_tasks
+         WHERE status IN ('scheduled', 'running') ORDER BY scheduled_for ASC LIMIT 50`,
+      )
+      .all() as unknown as QueueTaskRow[],
+    [] as QueueTaskRow[],
+  );
+
+  const eventRows = safe(
+    () => db.prepare("SELECT id, ts, device_id, event FROM farm_events ORDER BY ts DESC LIMIT 30").all() as unknown as EventRow[],
+    [] as EventRow[],
+  );
+
+  return {
+    rangeHours: hours,
+    devices: { online, total },
+    sessions: {
+      active: sessionsActive,
+      startedInRange,
+    },
+    swipes: { count: swipesTotal, deltaPct: null },
+    successRate: { pct: successPct, sampleCount: finishedSamples },
+    avgCycleTime: { seconds: avgCycleSeconds, sampleCount: cycleSamples },
+    queue: queueRows.map((t) => ({
+      id: t.id,
+      title: humanizeTaskTitle(t.type, t.payload),
+      device: t.device_id || "Any",
+      status: t.status,
+      createdAt: t.created_at,
+    })),
+    recentEvents: eventRows.map((e) => ({
+      id: e.id,
+      ts: e.ts,
+      deviceId: e.device_id,
+      text: e.event,
+    })),
+  };
 }

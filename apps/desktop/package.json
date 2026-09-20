@@ -1,0 +1,27 @@
+{
+  "name": "octagon-desktop",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Octagon desktop shell - native macOS wrapper for the local dashboard and farm hub",
+  "main": "main.js",
+  "scripts": {
+    "dev": "NEXT_DEV_URL=http://localhost:3010 OCTAGON_DESKTOP_DEV=1 electron .",
+    "build:dashboard": "cd ../dashboard && NEXT_TELEMETRY_DISABLED=1 npm run build",
+    "prepare:resources": "node scripts/prepare-resources.js",
+    "rebuild:native": "node scripts/rebuild-native.js",
+    "build:app": "npm run build:dashboard && npm run prepare:resources && npm run rebuild:native && electron-builder --dir",
+    "gate:packaged": "node scripts/gate-packaged.js",
+    "dist": "npm run build:app && electron-builder && npm run gate:packaged",
+    "smoke": "OCTAGON_SMOKE=1 electron .",
+    "smoke:packaged": "OCTAGON_SMOKE=1 \"./release/mac-arm64/Octagon.app/Contents/MacOS/Octagon\""
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "4.2.0",
+    "electron": "44.4.3",
+    "electron-builder": "26.15.3",
+    "prebuild-install": "^7.1.3"
+  }
+}

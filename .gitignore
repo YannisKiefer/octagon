@@ -42,3 +42,14 @@ Thumbs.db
 # editor
 .vscode/
 .idea/
+
+# desktop shell (apps/desktop) build artifacts
+apps/desktop/dist
+apps/desktop/release
+apps/desktop/node_modules
+# generated resource copies (scripts/prepare-resources.js)
+apps/desktop/standalone/
+apps/desktop/farm/
+# keep the icon (electron-builder buildResources) despite the bare build/ rule above
+!apps/desktop/build/
+

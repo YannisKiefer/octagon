@@ -95,6 +95,11 @@ export default withAuth(
         ) {
           return true;
         }
+        // The packaged desktop app serves loopback-only and manages its own
+        // lifecycle; login would add friction without adding safety there.
+        if (process.env.OCTAGON_DESKTOP === "1") {
+          return true;
+        }
         if (process.env.NODE_ENV === "development") {
           return true;
         }

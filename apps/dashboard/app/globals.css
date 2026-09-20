@@ -2,56 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
-/* DM Sans - SIL OFL, self-hosted (see public/fonts/OFL.txt). */
-@font-face {
-  font-family: "DM Sans";
-  src: url("/fonts/dmsans-400.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "DM Sans";
-  src: url("/fonts/dmsans-500.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "DM Sans";
-  src: url("/fonts/dmsans-700.woff2") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* Octagon design tokens - brand palette: Obsidian, Forest, Ivory, Bronze.
-   See BRAND.md at the repo root. Green/red/amber are functional status
-   colors only; Bronze is the single accent. */
+/* Octagon design tokens - neutral dark surfaces, one blue accent.
+   Functional color (success/warning/error) is reserved for status.
+   Type is the macOS system stack; no webfont is loaded. */
 :root {
-  --bg-window: #0F1F17;
-  --bg-panel: #14231B;
-  --bg-hover: #182A20;
-  --bg-selected: #1F3A2E;
-  --bg-agent-bubble: #182A20;
-  --bg-user-bubble: #1F3A2E;
-  --bg-input: #14231B;
-  --border-subtle: #24382E;
-  --border-strong: #2E4538;
-  --text-primary: #F8F6F1;
-  --text-secondary: #A8B5AD;
-  --text-muted: #6E7F74;
-  --accent-bronze: #C58E5B;
-  --accent-bronze-hover: #D9A76F;
-  --accent-green: #30d158;
-  --accent-red: #ff453a;
-  --accent-amber: #f59e0b;
+  /* Surfaces, darkest to most raised. */
+  --bg-window: #0B0E12; /* canvas */
+  --bg-sidebar: #0E1116; /* sidebar rail, title bar */
+  --bg-surface: #151A21; /* cards, agent messages, tables */
+  --bg-raised: #1C222B; /* icon wells, chips, controls, user bubble */
+  --bg-hover: #222936;
+  --bg-selected: #243044; /* selected rows, blue-tinted */
 
-  --radius-row: 12px;
-  --radius-bubble: 18px;
-  --radius-modal: 24px;
+  /* Text tiers. */
+  --text-primary: #F5F7FA;
+  --text-secondary: #A6AFBD;
+  --text-muted: #7F8B9B;
 
-  --font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  /* Hairlines. */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  /* Accent and status. */
+  --accent: #529BFF;
+  --accent-hover: #6AA9FF;
+  --accent-soft: rgba(82, 155, 255, 0.14);
+  --success: #30D158;
+  --warning: #F5A524;
+  --error: #F97070;
+
+  /* Radii: controls 10-12, cards and messages 14-16, composer 20-24, pills full. */
+  --radius-control: 12px;
+  --radius-card: 16px;
+  --radius-composer: 22px;
+
+  /* Type: macOS system stack. Body 14px, metadata 12-13px, device headings
+     16-18px, dashboard headings and metrics 28-34px, tabular numerals for values. */
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
 }
 
 * {
@@ -65,21 +52,35 @@ body {
   background: var(--bg-window);
   color: var(--text-primary);
   font-family: var(--font-body);
+  font-size: 14px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* Text stays selectable everywhere; nothing sets user-select: none globally. */
 
+/* macOS title bar replacement: drag the bar, never its controls. */
+.titlebar-drag {
+  -webkit-app-region: drag;
+}
+.titlebar-nodrag {
+  -webkit-app-region: no-drag;
+}
+
+/* Tabular numerals for metrics, counters and timestamps. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Visible keyboard focus on every interactive element. */
 :focus-visible {
-  outline: 2px solid var(--accent-bronze);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 ::selection {
-  background: rgba(197, 142, 91, 0.35);
+  background: rgba(82, 155, 255, 0.35);
 }
 
 ::-webkit-scrollbar {
@@ -90,11 +91,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2E4538;
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3A5443;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Respect users who ask for less motion. */
