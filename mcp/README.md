@@ -1,9 +1,17 @@
-# Octagon MCP — 5 tools, Hermes talks to your phones
+# Octagon MCP server
 
-**Hermes is the chat, Octagon is the hands.** No vision, no bloat.
+`mcp/server.js` exposes the local farm to any MCP client (Claude Desktop, Claude Code, or your own agent) over stdio. It reads and writes the same local SQLite file the dashboard uses: `infra/db/farm.db`, or `FARM_DB_PATH` if set.
+
+## Requirements
+
+- Node 20 or newer.
+- better-sqlite3 must be resolvable. If it is not installed globally, run `cd infra/farm && npm install` once; the server falls back to `infra/farm/node_modules/better-sqlite3`.
+
+## Client configuration
+
+Claude Desktop (`claude_desktop_config.json`) or any generic client with the standard `mcpServers` shape:
 
 ```json
-// Hermes: ~/.hermes/mcp.json  —  OpenClaw: openclaw.json
 {
   "mcpServers": {
     "octagon": {
@@ -14,21 +22,67 @@
 }
 ```
 
-Then in Telegram/Discord with Hermes Bots: `@Alpha warm 30m` → Hermes calls `warm_phone` → Octagon does `say "Alpha Swipe Next"` with global lock.
+Claude Code:
 
-**Tools:**
-- `list_phones` → 4 phone-agents
-- `get_phone` → health + screen
-- `warm_phone {slot, minutes}` → queues `farm_tasks`, hub warms
-- `get_events {phoneId}` → chat bubbles
-- `get_phone_screen {phoneId}` → base64 (mock now, `idevicescreenshot` later)
+```bash
+claude mcp add octagon -- node /absolute/path/to/octagon/mcp/server.js
+```
 
-**Node:** requires Node 20 (better-sqlite3 115). Use `PATH="/opt/homebrew/opt/node@20/bin:$PATH" node mcp/server.js` or `nvm use 20`.
+Replace `/absolute/path/to/octagon` with your checkout location.
 
-**Security:** stdio local, no auth. If you expose via HTTP, set `OCTAGON_MCP_TOKEN` and check `params._token` — `// ponytail: no auth, add token if HTTP`.
+## Tools
 
-Test:
+### list_phones
+
+All phones registered in the local farm.
+
+```json
+{ "type": "object", "properties": {} }
+```
+
+### get_phone
+
+One phone with its health record.
+
+```json
+{ "type": "object", "properties": { "phoneId": { "type": "string" } }, "required": ["phoneId"] }
+```
+
+### run_session
+
+Queues a pacing session (swipe pacing over iOS Voice Control). This only inserts a scheduled task: it executes while the hub is running, not otherwise. Check progress with `get_events`.
+
+```json
+{ "type": "object", "properties": { "slot": { "type": "number", "minimum": 1, "maximum": 8 }, "minutes": { "type": "number", "default": 10, "minimum": 1, "maximum": 180 } }, "required": ["slot"] }
+```
+
+### get_events
+
+Recent events (chat bubbles) for a phone, newest first.
+
+```json
+{ "type": "object", "properties": { "phoneId": { "type": "string" }, "limit": { "type": "number", "default": 20 } }, "required": ["phoneId"] }
+```
+
+### get_phone_screen
+
+Captures the phone screen. Requirements: libimobiledevice installed (`brew install libimobiledevice`), the iPhone connected and trusted, and the device's UDID configured as `FARM_PHONEn_UDID` in `.env`. On success, `idevicescreenshot` writes the screenshot file to the server's current working directory. When capture is not possible, the tool returns an explicit unavailable answer with the reason. It never returns a placeholder image.
+
+```json
+{ "type": "object", "properties": { "phoneId": { "type": "string" } }, "required": ["phoneId"] }
+```
+
+## Scope and security
+
+- Local stdio only. The server has no network listener and no auth, by design. Do not expose it over HTTP or run it on a shared machine without understanding that every local process can talk to it.
+- The server opens the database read-only, except `run_session`, which inserts one scheduled task.
+- Automating social accounts can violate platform terms. Octagon automates only what you configure on devices you own; you are responsible for how you use it.
+
+## Smoke test
+
 ```bash
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | node mcp/server.js
-printf '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"list_phones","arguments":{}}}\n' | PATH="/opt/homebrew/opt/node@20/bin:$PATH" node mcp/server.js
+printf '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_phones","arguments":{}}}\n' | node mcp/server.js
 ```
+
+Each command prints one JSON-RPC response line.
