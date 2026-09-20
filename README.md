@@ -74,6 +74,10 @@ Python is not needed.
 
 ## Quick start
 
+**macOS (Apple Silicon):** download the [latest DMG](https://github.com/YannisKiefer/octagon/releases/latest/download/Octagon-1.1.0-arm64.dmg), drag Octagon to Applications. Unsigned build: first launch needs System Settings - Privacy and Security - Open Anyway (once).
+
+Prefer running from source?
+
 ```bash
 git clone https://github.com/YannisKiefer/octagon.git
 cd octagon

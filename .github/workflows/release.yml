@@ -77,12 +77,5 @@ jobs:
           NEXT_TELEMETRY_DISABLED: 1
         run: npm run build
 
-      - name: Create GitHub release with generated notes
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create "${GITHUB_REF_NAME}" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --title "Octagon ${GITHUB_REF_NAME}" \
-            --notes "See CHANGELOG.md for what changed. Octagon is run from source; see the README quick start." \
-            --generate-notes
+      - name: Tag verified (release with DMG assets is published by the maintainer)
+        run: echo "CI green for ${{ github.ref_name }}; maintainer attaches DMG/zip to this tag's release."

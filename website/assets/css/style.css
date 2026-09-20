@@ -685,3 +685,6 @@ figcaption {
 
 /* Selection */
 ::selection { background: rgba(197, 142, 91, 0.32); }
+
+.section-cta { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0 12px; }
+.fineprint { color: #5A6660; font-size: 13px; max-width: 720px; line-height: 1.6; }
