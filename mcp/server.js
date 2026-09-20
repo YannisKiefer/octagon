@@ -22,7 +22,7 @@ try { Database = require("better-sqlite3"); } catch { Database = require("../inf
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB = process.env.FARM_DB_PATH || path.join(__dirname, "../infra/db/farm.db");
 
-function db(){ const d=new Database(DB, {readonly:true}); d.pragma("journal_mode=WAL"); return d; }
+function db(){ return new Database(DB, {readonly:true}); }
 
 const TOOLS = [
   {name:"list_phones", description:"List phones registered in the local Octagon farm", inputSchema:{type:"object", properties:{}}},
@@ -84,7 +84,7 @@ function handle(msg){
           const exists=d.prepare("SELECT id FROM farm_devices WHERE id=?").get(id2);
           if(!exists){ text=`No device ${id2} in the local farm. Call list_phones first.`; }
           else{
-            d.prepare("INSERT INTO farm_tasks (id,type,device_id,scheduled_for,status,payload,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)").run(`task_${Date.now()}`, "session", id2, new Date().toISOString(), "scheduled", JSON.stringify({duration_minutes:minutesN, source:"mcp"}), new Date().toISOString(), new Date().toISOString());
+            d.prepare("INSERT INTO farm_tasks (id,type,device_id,scheduled_for,status,payload,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)").run(require("crypto").randomUUID(), "session", id2, new Date().toISOString(), "scheduled", JSON.stringify({duration_minutes:minutesN, source:"mcp"}), new Date().toISOString(), new Date().toISOString());
             text=`Queued a ${minutesN}-minute session for ${id2}. It runs while the hub is up; check get_events.`;
           }
         } finally { d.close(); }

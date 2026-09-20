@@ -1,6 +1,6 @@
 {
   "name": "octagon-dashboard",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "dev": "NEXT_TELEMETRY_DISABLED=1 next dev -p 3010",

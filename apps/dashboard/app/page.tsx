@@ -57,7 +57,7 @@ type SettingsData = {
   reachable: boolean;
 };
 
-const AVATAR_BGS = ["#3a3a3c", "#7d5cf6", "#3b82f6", "#f59e0b"];
+const AVATAR_BGS = ["#1F3A2E", "#2A4A3B", "#355A49", "#406857"];
 const SESSION_PRESETS = [5, 10, 15, 30, 60];
 
 function avatarBg(id: string): string {
@@ -110,31 +110,34 @@ function parseDuration(payload: string): number | null {
 }
 
 const STATUS_CHIP: Record<Task["status"], string> = {
-  scheduled: "bg-[#2c2c2e] text-[#98989d]",
+  scheduled: "bg-[#1F3A2E] text-[#A8B5AD]",
   running: "bg-[rgba(48,209,88,0.15)] text-[#30d158]",
   succeeded: "bg-[rgba(48,209,88,0.15)] text-[#30d158]",
   failed: "bg-[rgba(255,69,58,0.15)] text-[#ff453a]",
-  canceled: "bg-[#2c2c2e] text-[#636366]",
+  canceled: "bg-[#1F3A2E] text-[#6E7F74]",
 };
 
 function OctagonMark({ size = 18 }: { size?: number }) {
+  // Exact geometry from assets/brand/octagon-mark-reversed.svg (BRAND.md).
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" className="shrink-0">
-      <polygon
-        points="25.2,19.8 19.8,25.2 12.2,25.2 6.8,19.8 6.8,12.2 12.2,6.8 19.8,6.8 25.2,12.2"
+    <svg width={size} height={size} viewBox="0 0 240 240" aria-hidden="true" className="shrink-0">
+      <path
+        d="M 163.94 33.28 L 158.27 27.61 L 81.73 27.61 L 27.61 81.73 L 27.61 158.27 L 81.73 212.39 L 158.27 212.39 L 212.39 158.27 L 212.39 81.73 L 206.72 75.99"
         fill="none"
-        stroke="#98989d"
-        strokeWidth="2.4"
-        strokeLinejoin="round"
+        stroke="#F8F6F1"
+        strokeWidth="40"
+        strokeLinecap="butt"
+        strokeLinejoin="miter"
+        strokeMiterlimit="10"
       />
-      <circle cx="16" cy="16" r="2.6" fill="#30d158" />
+      <polygon points="237.6,58.0 205.0,90.6 148.4,34.0 181.0,1.4" fill="#C58E5B" />
     </svg>
   );
 }
 
 function SearchIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#636366]">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6E7F74]">
       <circle cx="11" cy="11" r="7" />
       <path d="m21 21-4.3-4.3" />
     </svg>
@@ -175,16 +178,16 @@ function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="w-full bg-[#111113] border border-[#2c2c2e] rounded-[24px] shadow-2xl overflow-hidden"
+        className="w-full bg-[#14231B] border border-[#2E4538] rounded-[24px] shadow-2xl overflow-hidden"
         style={{ maxWidth }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="h-11 flex items-center justify-between px-4 border-b border-[#1c1c1e]">
+        <div className="h-11 flex items-center justify-between px-4 border-b border-[#24382E]">
           <span className="text-[13px] font-semibold">{title}</span>
           <button
             onClick={onClose}
             aria-label="Close dialog"
-            className="w-6 h-6 rounded-full bg-[#2c2c2e] grid place-items-center text-[#98989d] hover:text-[#f5f5f7] text-[11px] leading-none"
+            className="w-6 h-6 rounded-full bg-[#1F3A2E] grid place-items-center text-[#A8B5AD] hover:text-[#F8F6F1] text-[11px] leading-none"
           >
             ✕
           </button>
@@ -198,7 +201,7 @@ function Modal({
 function DetailRow({ label, value, valueClass = "" }: { label: string; value: string; valueClass?: string }) {
   return (
     <div className="flex items-start justify-between gap-4 py-[7px] text-[13px]">
-      <span className="text-[#98989d] shrink-0">{label}</span>
+      <span className="text-[#A8B5AD] shrink-0">{label}</span>
       <span className={`text-right break-words min-w-0 ${valueClass}`}>{value}</span>
     </div>
   );
@@ -538,32 +541,32 @@ export default function OctagonChat() {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search"
               aria-label="Search devices"
-              className="w-full bg-[#1b1b1d] border border-[#2c2c2e] rounded-lg pl-8 pr-3 py-[6px] text-[13px] placeholder:text-[#636366] focus:outline-none focus:border-[#48484a]"
+              className="w-full bg-[#14231B] border border-[#2E4538] rounded-lg pl-8 pr-3 py-[6px] text-[13px] placeholder:text-[#6E7F74] focus:outline-none focus:border-[#C58E5B]"
             />
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 space-y-[2px]">
           {farmError === "auth" && (
-            <div className="px-3 py-4 text-[12.5px] text-[#98989d] leading-relaxed">
+            <div className="px-3 py-4 text-[12.5px] text-[#A8B5AD] leading-relaxed">
               Sign in required.
               <br />
-              <Link href="/login" className="text-[#f5f5f7] underline underline-offset-2">
+              <Link href="/login" className="text-[#F8F6F1] underline underline-offset-2">
                 Go to login
               </Link>
             </div>
           )}
           {farmError === "error" && (
-            <div className="px-3 py-4 text-[12.5px] text-[#98989d] leading-relaxed">
+            <div className="px-3 py-4 text-[12.5px] text-[#A8B5AD] leading-relaxed">
               Could not load devices.
               <br />
-              <span className="text-[#636366] break-words">{farmErrorMsg}</span>
+              <span className="text-[#6E7F74] break-words">{farmErrorMsg}</span>
             </div>
           )}
           {farmLoaded && !farmError && devices.length === 0 && (
-            <div className="px-3 py-4 text-[12.5px] text-[#98989d] leading-relaxed">
+            <div className="px-3 py-4 text-[12.5px] text-[#A8B5AD] leading-relaxed">
               <p>No devices yet. Add one, or run:</p>
-              <code className="block mt-2 bg-[#1b1b1d] border border-[#2c2c2e] rounded-lg px-2 py-[6px] text-[11.5px] text-[#f5f5f7] break-all">
+              <code className="block mt-2 bg-[#14231B] border border-[#2E4538] rounded-lg px-2 py-[6px] text-[11.5px] text-[#F8F6F1] break-all">
                 node scripts/seed-demo.js
               </code>
             </div>
@@ -581,7 +584,7 @@ export default function OctagonChat() {
                 }}
                 aria-current={isSel ? "true" : undefined}
                 className={`w-full flex items-start gap-[10px] px-2 py-[9px] rounded-xl text-left transition-colors ${
-                  isSel ? "bg-[#2a2a2c]" : "hover:bg-[#1c1c1e]"
+                  isSel ? "bg-[#1F3A2E]" : "hover:bg-[#182A20]"
                 }`}
               >
                 <span
@@ -596,7 +599,7 @@ export default function OctagonChat() {
                     <span className="text-[13.5px] font-semibold leading-tight truncate">
                       {d.voice_prefix}
                     </span>
-                    <span className="ml-auto text-[11px] text-[#636366] shrink-0">
+                    <span className="ml-auto text-[11px] text-[#6E7F74] shrink-0">
                       {fmtTime(dh?.updated_at || d.updated_at)}
                     </span>
                   </span>
@@ -606,13 +609,13 @@ export default function OctagonChat() {
                         state === "session" || state === "running"
                           ? "bg-[rgba(48,209,88,0.15)] text-[#30d158]"
                           : state === "idle"
-                            ? "bg-[#2c2c2e] text-[#98989d]"
+                            ? "bg-[#1F3A2E] text-[#A8B5AD]"
                             : "bg-[rgba(245,158,11,0.15)] text-[#f59e0b]"
                       }`}
                     >
                       {state}
                     </span>
-                    <span className="text-[12px] text-[#98989d] truncate">
+                    <span className="text-[12px] text-[#A8B5AD] truncate">
                       {(dh?.swipes ?? 0).toLocaleString("en-US")} swipes
                     </span>
                   </span>
@@ -621,7 +624,7 @@ export default function OctagonChat() {
             );
           })}
           {farmLoaded && !farmError && devices.length > 0 && filtered.length === 0 && (
-            <div className="px-3 py-4 text-[12.5px] text-[#636366]">No device matches.</div>
+            <div className="px-3 py-4 text-[12.5px] text-[#6E7F74]">No device matches.</div>
           )}
         </div>
 
@@ -633,15 +636,15 @@ export default function OctagonChat() {
               setModal("add");
               setDrawerOpen(false);
             }}
-            className="w-full flex items-center gap-[10px] px-2 py-[8px] rounded-xl hover:bg-[#1c1c1e] text-left transition-colors"
+            className="w-full flex items-center gap-[10px] px-2 py-[8px] rounded-xl hover:bg-[#182A20] text-left transition-colors"
           >
             <span
-              className="w-7 h-7 rounded-full border border-dashed border-[#48484a] grid place-items-center text-[#98989d]"
+              className="w-7 h-7 rounded-full border border-dashed border-[#C58E5B] grid place-items-center text-[#A8B5AD]"
               aria-hidden="true"
             >
               +
             </span>
-            <span className="text-[13.5px] font-medium text-[#98989d]">Add device</span>
+            <span className="text-[13.5px] font-medium text-[#A8B5AD]">Add device</span>
           </button>
         </div>
       </>
@@ -649,25 +652,25 @@ export default function OctagonChat() {
   }
 
   return (
-    <div className="h-dvh flex flex-col bg-[#0d0d0f] text-[#f5f5f7] overflow-hidden">
+    <div className="h-dvh flex flex-col bg-[#0F1F17] text-[#F8F6F1] overflow-hidden">
       {/* Titlebar */}
-      <header className="h-12 shrink-0 flex items-center gap-3 pl-3 pr-4 border-b border-[#1c1c1e]">
+      <header className="h-12 shrink-0 flex items-center gap-3 pl-3 pr-4 border-b border-[#24382E]">
         <button
           onClick={() => setDrawerOpen(true)}
           aria-label="Open device list"
-          className="md:hidden w-8 h-8 rounded-lg hover:bg-[#1c1c1e] grid place-items-center text-[#98989d]"
+          className="md:hidden w-8 h-8 rounded-lg hover:bg-[#182A20] grid place-items-center text-[#A8B5AD]"
         >
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
             <path d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
         <OctagonMark />
-        <span className="text-[13px] font-semibold text-[#98989d] tracking-wide">Octagon</span>
+        <span className="text-[13px] font-semibold text-[#A8B5AD] tracking-wide">Octagon</span>
 
         <div className="ml-auto flex items-center gap-4">
           <span
             className={`flex items-center gap-1.5 text-[12px] ${
-              farmLoaded && hubRunning ? "text-[#98989d]" : "text-[#636366]"
+              farmLoaded && hubRunning ? "text-[#A8B5AD]" : "text-[#6E7F74]"
             }`}
             title={hub?.ts ? `Hub heartbeat: ${hub.ts}` : "No hub heartbeat recorded"}
           >
@@ -680,7 +683,7 @@ export default function OctagonChat() {
             onClick={openSettings}
             aria-label="Settings"
             title="Settings"
-            className="w-8 h-8 rounded-lg hover:bg-[#1c1c1e] grid place-items-center text-[#98989d] hover:text-[#f5f5f7] transition-colors"
+            className="w-8 h-8 rounded-lg hover:bg-[#182A20] grid place-items-center text-[#A8B5AD] hover:text-[#F8F6F1] transition-colors"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
               <circle cx="12" cy="12" r="3" />
@@ -692,12 +695,12 @@ export default function OctagonChat() {
 
       <div className="flex flex-1 min-h-0">
         {/* Sidebar (desktop) */}
-        <aside className="hidden md:flex w-[275px] shrink-0 bg-[#111113] border-r border-[#1c1c1e] flex-col">
+        <aside className="hidden md:flex w-[275px] shrink-0 bg-[#14231B] border-r border-[#24382E] flex-col">
           {sidebarContent()}
         </aside>
 
         {/* Chat */}
-        <main className="flex-1 min-w-0 flex flex-col bg-[#0d0d0f]">
+        <main className="flex-1 min-w-0 flex flex-col bg-[#0F1F17]">
           <div className="h-[52px] shrink-0 flex items-center gap-[10px] px-4 md:px-5">
             {device ? (
               <>
@@ -717,34 +720,34 @@ export default function OctagonChat() {
                     <span className="block text-[14px] font-semibold truncate">
                       {device.voice_prefix}
                     </span>
-                    <span className="block text-[12px] text-[#636366] truncate">{device.id}</span>
+                    <span className="block text-[12px] text-[#6E7F74] truncate">{device.id}</span>
                   </span>
                 </button>
-                <span className="ml-auto text-[11.5px] text-[#98989d] shrink-0">
+                <span className="ml-auto text-[11.5px] text-[#A8B5AD] shrink-0">
                   {h?.session_state || "idle"} · {(h?.swipes ?? 0).toLocaleString("en-US")} swipes
                 </span>
               </>
             ) : (
-              <span className="text-[13px] text-[#636366]">Octagon</span>
+              <span className="text-[13px] text-[#6E7F74]">Octagon</span>
             )}
           </div>
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-6 pb-4">
             {msgError && (
-              <p className="text-center text-[12px] text-[#98989d] py-3" role="alert">
+              <p className="text-center text-[12px] text-[#A8B5AD] py-3" role="alert">
                 Could not load messages for this device.
               </p>
             )}
             {!device && (
               <div className="h-full grid place-items-center">
-                <p className="text-[13px] text-[#636366] text-center px-6">
+                <p className="text-[13px] text-[#6E7F74] text-center px-6">
                   Add a device to start chatting.
                 </p>
               </div>
             )}
             {device && !msgError && msgs.length === 0 && (
               <div className="h-full grid place-items-center">
-                <p className="text-[13px] text-[#636366] text-center px-6">
+                <p className="text-[13px] text-[#6E7F74] text-center px-6">
                   No messages yet. Try {'"run 20"'}, {'"status"'}, or {'"stop"'}.
                 </p>
               </div>
@@ -755,13 +758,13 @@ export default function OctagonChat() {
                 <div key={m.ts + ":" + i} className="mb-4">
                   {showDay && (
                     <div className="flex justify-center py-2 mb-2">
-                      <span className="text-[11px] text-[#636366] bg-[#1b1b1d] rounded-full px-3 py-1">
+                      <span className="text-[11px] text-[#6E7F74] bg-[#14231B] rounded-full px-3 py-1">
                         {dayLabel(m.ts)}
                       </span>
                     </div>
                   )}
                   <div
-                    className={`text-[11px] text-[#636366] mb-[6px] ${
+                    className={`text-[11px] text-[#6E7F74] mb-[6px] ${
                       m.side === "right" ? "text-right pr-1" : "pl-1"
                     }`}
                   >
@@ -769,7 +772,7 @@ export default function OctagonChat() {
                   </div>
                   <div
                     className={`max-w-[85%] md:max-w-[68%] rounded-[18px] px-[14px] py-[10px] text-[13.5px] leading-[1.5] whitespace-pre-wrap break-words ${
-                      m.side === "right" ? "ml-auto bg-[#323236]" : "bg-[#26262a]"
+                      m.side === "right" ? "ml-auto bg-[#1F3A2E]" : "bg-[#182A20]"
                     } ${m.side === "left" && m.level === "error" ? "border-l-2 border-[#ff453a]" : ""}`}
                   >
                     {m.text}
@@ -786,7 +789,7 @@ export default function OctagonChat() {
                 {sendError}
               </p>
             )}
-            <div className="flex items-center gap-2 bg-[#1b1b1d] border border-[#2c2c2e] rounded-full pl-4 pr-2 py-[7px]">
+            <div className="flex items-center gap-2 bg-[#14231B] border border-[#2E4538] rounded-full pl-4 pr-2 py-[7px]">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -803,7 +806,7 @@ export default function OctagonChat() {
                     : "Add a device first"
                 }
                 aria-label="Message input"
-                className="flex-1 min-w-0 bg-transparent outline-none text-[13.5px] placeholder:text-[#636366] disabled:opacity-50"
+                className="flex-1 min-w-0 bg-transparent outline-none text-[13.5px] placeholder:text-[#6E7F74] disabled:opacity-50"
               />
               <button
                 onClick={toggleMic}
@@ -813,8 +816,8 @@ export default function OctagonChat() {
                 aria-pressed={listening}
                 className={`w-[30px] h-[30px] rounded-full grid place-items-center shrink-0 transition-colors ${
                   listening
-                    ? "bg-[#30d158] text-black"
-                    : "bg-[#f5f5f7] text-black hover:bg-white"
+                    ? "bg-[#30d158] text-[#0F1F17]"
+                    : "bg-[#F8F6F1] text-[#0F1F17] hover:bg-white"
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
                 <MicIcon />
@@ -825,24 +828,24 @@ export default function OctagonChat() {
 
         {/* Device panel (desktop) */}
         {device && (
-          <aside className="hidden lg:flex w-[340px] shrink-0 bg-[#111113] border-l border-[#1c1c1e] flex-col overflow-y-auto">
+          <aside className="hidden lg:flex w-[340px] shrink-0 bg-[#14231B] border-l border-[#24382E] flex-col overflow-y-auto">
             <div className="px-5 py-5">
-              <p className="text-[12.5px] text-[#98989d] text-center mb-2">
+              <p className="text-[12.5px] text-[#A8B5AD] text-center mb-2">
                 Screen of {device.voice_prefix}
               </p>
               <button
                 onClick={() => setModal("details")}
-                className="w-full aspect-[4/3] bg-[#1a1a1c] border border-[#2c2c2e] rounded-xl grid place-items-center hover:border-[#48484a] transition-colors px-6"
+                className="w-full aspect-[4/3] bg-[#14231B] border border-[#2E4538] rounded-xl grid place-items-center hover:border-[#3A5443] transition-colors px-6"
               >
                 <span className="flex flex-col items-center gap-2 text-center">
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#636366" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6E7F74" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
                     <rect x="7" y="2.5" width="10" height="19" rx="2.5" />
                     <path d="M3 3l18 18" />
                   </svg>
-                  <span className="text-[13px] font-medium text-[#98989d]">
+                  <span className="text-[13px] font-medium text-[#A8B5AD]">
                     Screen capture not connected
                   </span>
-                  <span className="text-[11.5px] text-[#636366] leading-relaxed">
+                  <span className="text-[11.5px] text-[#6E7F74] leading-relaxed">
                     Live screen capture requires libimobiledevice and the device UDID (see setup
                     guide).
                   </span>
@@ -872,7 +875,7 @@ export default function OctagonChat() {
                 <span className="text-[15px] font-semibold">Sessions</span>
               </div>
               {tasksError && (
-                <p className="text-[12px] text-[#98989d] py-1" role="alert">
+                <p className="text-[12px] text-[#A8B5AD] py-1" role="alert">
                   Could not load sessions.
                 </p>
               )}
@@ -880,7 +883,7 @@ export default function OctagonChat() {
                 {deviceTasks.map((t) => {
                   const mins = parseDuration(t.payload);
                   return (
-                    <div key={t.id} className="px-2 py-[8px] rounded-xl hover:bg-[#1c1c1e]">
+                    <div key={t.id} className="px-2 py-[8px] rounded-xl hover:bg-[#182A20]">
                       <div className="flex items-center gap-2">
                         <span className="text-[13.5px] font-medium truncate flex-1 min-w-0">
                           Pacing session{mins !== null ? ` - ${mins} min` : ""}
@@ -893,7 +896,7 @@ export default function OctagonChat() {
                           {t.status}
                         </span>
                       </div>
-                      <div className="text-[12px] text-[#98989d] mt-[2px]">
+                      <div className="text-[12px] text-[#A8B5AD] mt-[2px]">
                         {fmtTime(t.scheduled_for)}
                       </div>
                       {t.status === "failed" && t.error && (
@@ -908,7 +911,7 @@ export default function OctagonChat() {
                   );
                 })}
                 {!tasksError && deviceTasks.length === 0 && (
-                  <p className="text-[12.5px] text-[#636366] px-2 py-1">No sessions yet.</p>
+                  <p className="text-[12.5px] text-[#6E7F74] px-2 py-1">No sessions yet.</p>
                 )}
               </div>
 
@@ -918,7 +921,7 @@ export default function OctagonChat() {
                   setSessionError("");
                   setModal("session");
                 }}
-                className="mt-4 mb-2 w-full bg-[#f5f5f7] hover:bg-white text-black rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
+                className="mt-4 mb-2 w-full bg-[#F8F6F1] hover:bg-white text-[#0F1F17] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
               >
                 New session
               </button>
@@ -935,7 +938,7 @@ export default function OctagonChat() {
             role="dialog"
             aria-modal="true"
             aria-label="Devices"
-            className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-[#111113] border-r border-[#1c1c1e] flex flex-col"
+            className="absolute left-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-[#14231B] border-r border-[#24382E] flex flex-col"
           >
             {sidebarContent()}
           </div>
@@ -966,13 +969,13 @@ export default function OctagonChat() {
                 {h.error}
               </div>
             )}
-            <p className="mt-4 text-[11.5px] text-[#636366] leading-relaxed">
+            <p className="mt-4 text-[11.5px] text-[#6E7F74] leading-relaxed">
               Screen capture is not connected. Live screen capture requires libimobiledevice and
               the device UDID (see setup guide).
             </p>
             <button
               onClick={() => setModal(null)}
-              className="mt-4 w-full bg-[#2c2c2e] hover:bg-[#3a3a3c] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
+              className="mt-4 w-full bg-[#1F3A2E] hover:bg-[#3a3a3c] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
             >
               Close
             </button>
@@ -984,7 +987,7 @@ export default function OctagonChat() {
       {modal === "add" && (
         <Modal title="Add device" onClose={closeAndResetAdd} maxWidth={360}>
           <div className="p-4 space-y-3">
-            <label htmlFor="prefix" className="block text-[12px] text-[#98989d]">
+            <label htmlFor="prefix" className="block text-[12px] text-[#A8B5AD]">
               Voice prefix
             </label>
             <input
@@ -996,9 +999,9 @@ export default function OctagonChat() {
               }}
               placeholder="e.g. Alpha"
               autoFocus
-              className="w-full bg-[#1b1b1d] border border-[#2c2c2e] rounded-lg px-3 py-[8px] text-[13.5px] placeholder:text-[#636366] focus:outline-none focus:border-[#48484a]"
+              className="w-full bg-[#14231B] border border-[#2E4538] rounded-lg px-3 py-[8px] text-[13.5px] placeholder:text-[#6E7F74] focus:outline-none focus:border-[#C58E5B]"
             />
-            <p className="text-[11.5px] text-[#636366] leading-relaxed">
+            <p className="text-[11.5px] text-[#6E7F74] leading-relaxed">
               {`On the iPhone, create a Voice Control custom command named "${
                 addPrefix.trim() || "Alpha"
               } Swipe Next" that performs a swipe-up.`}
@@ -1011,7 +1014,7 @@ export default function OctagonChat() {
             <button
               onClick={addDevice}
               disabled={adding || addPrefix.trim().length < 2}
-              className="w-full bg-[#f5f5f7] hover:bg-white disabled:opacity-40 text-black rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
+              className="w-full bg-[#F8F6F1] hover:bg-white disabled:opacity-40 text-[#0F1F17] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
             >
               {adding ? "Adding" : "Add device"}
             </button>
@@ -1023,7 +1026,7 @@ export default function OctagonChat() {
       {modal === "session" && device && (
         <Modal title={`New session - ${device.voice_prefix}`} onClose={() => setModal(null)} maxWidth={360}>
           <div className="p-4 space-y-3">
-            <span className="block text-[12px] text-[#98989d]">Duration (minutes)</span>
+            <span className="block text-[12px] text-[#A8B5AD]">Duration (minutes)</span>
             <div className="flex flex-wrap gap-2">
               {SESSION_PRESETS.map((n) => (
                 <button
@@ -1032,8 +1035,8 @@ export default function OctagonChat() {
                   aria-pressed={sessionMinutes === String(n)}
                   className={`px-3 py-[6px] rounded-full text-[13px] border transition-colors ${
                     sessionMinutes === String(n)
-                      ? "bg-[#2a2a2c] border-[#48484a] text-[#f5f5f7]"
-                      : "bg-[#1b1b1d] border-[#2c2c2e] text-[#98989d] hover:border-[#48484a]"
+                      ? "bg-[#1F3A2E] border-[#C58E5B] text-[#F8F6F1]"
+                      : "bg-[#14231B] border-[#2E4538] text-[#A8B5AD] hover:border-[#3A5443]"
                   }`}
                 >
                   {n}
@@ -1049,11 +1052,11 @@ export default function OctagonChat() {
                 onChange={(e) => setSessionMinutes(e.target.value)}
                 placeholder="Custom"
                 aria-label="Custom duration in minutes"
-                className="w-full bg-[#1b1b1d] border border-[#2c2c2e] rounded-lg px-3 py-[8px] text-[13.5px] placeholder:text-[#636366] focus:outline-none focus:border-[#48484a]"
+                className="w-full bg-[#14231B] border border-[#2E4538] rounded-lg px-3 py-[8px] text-[13.5px] placeholder:text-[#6E7F74] focus:outline-none focus:border-[#C58E5B]"
               />
-              <span className="text-[12px] text-[#636366] shrink-0">min</span>
+              <span className="text-[12px] text-[#6E7F74] shrink-0">min</span>
             </div>
-            <p className="text-[11.5px] text-[#636366] leading-relaxed">
+            <p className="text-[11.5px] text-[#6E7F74] leading-relaxed">
               The session runs while the hub is up. In dry-run mode nothing is spoken aloud.
             </p>
             {sessionError && (
@@ -1064,7 +1067,7 @@ export default function OctagonChat() {
             <button
               onClick={scheduleSession}
               disabled={sessionPosting}
-              className="w-full bg-[#f5f5f7] hover:bg-white disabled:opacity-40 text-black rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
+              className="w-full bg-[#F8F6F1] hover:bg-white disabled:opacity-40 text-[#0F1F17] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
             >
               {sessionPosting ? "Scheduling" : "Schedule session"}
             </button>
@@ -1076,7 +1079,7 @@ export default function OctagonChat() {
       {modal === "settings" && (
         <Modal title="Settings" onClose={() => setModal(null)}>
           <div className="p-4 text-[13px]">
-            {settingsLoading && <p className="text-[#98989d] py-2">Checking</p>}
+            {settingsLoading && <p className="text-[#A8B5AD] py-2">Checking</p>}
             {!settingsLoading && settings && (
               <>
                 <DetailRow

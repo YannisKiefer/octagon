@@ -2,20 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Octagon design tokens - neutral dark, macOS-like. */
+/* DM Sans - SIL OFL, self-hosted (see public/fonts/OFL.txt). */
+@font-face {
+  font-family: "DM Sans";
+  src: url("/fonts/dmsans-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DM Sans";
+  src: url("/fonts/dmsans-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DM Sans";
+  src: url("/fonts/dmsans-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Octagon design tokens - brand palette: Obsidian, Forest, Ivory, Bronze.
+   See BRAND.md at the repo root. Green/red/amber are functional status
+   colors only; Bronze is the single accent. */
 :root {
-  --bg-window: #0d0d0f;
-  --bg-panel: #111113;
-  --bg-hover: #1c1c1e;
-  --bg-selected: #2a2a2c;
-  --bg-agent-bubble: #26262a;
-  --bg-user-bubble: #323236;
-  --bg-input: #1b1b1d;
-  --border-subtle: #1c1c1e;
-  --border-strong: #2c2c2e;
-  --text-primary: #f5f5f7;
-  --text-secondary: #98989d;
-  --text-muted: #636366;
+  --bg-window: #0F1F17;
+  --bg-panel: #14231B;
+  --bg-hover: #182A20;
+  --bg-selected: #1F3A2E;
+  --bg-agent-bubble: #182A20;
+  --bg-user-bubble: #1F3A2E;
+  --bg-input: #14231B;
+  --border-subtle: #24382E;
+  --border-strong: #2E4538;
+  --text-primary: #F8F6F1;
+  --text-secondary: #A8B5AD;
+  --text-muted: #6E7F74;
+  --accent-bronze: #C58E5B;
+  --accent-bronze-hover: #D9A76F;
   --accent-green: #30d158;
   --accent-red: #ff453a;
   --accent-amber: #f59e0b;
@@ -24,7 +51,7 @@
   --radius-bubble: 18px;
   --radius-modal: 24px;
 
-  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
 }
 
 * {
@@ -46,13 +73,13 @@ body {
 
 /* Visible keyboard focus on every interactive element. */
 :focus-visible {
-  outline: 2px solid var(--accent-green);
+  outline: 2px solid var(--accent-bronze);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 ::selection {
-  background: rgba(125, 92, 246, 0.4);
+  background: rgba(197, 142, 91, 0.35);
 }
 
 ::-webkit-scrollbar {
@@ -63,11 +90,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2c2c2e;
+  background: #2E4538;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a3a3c;
+  background: #3A5443;
 }
 
 /* Respect users who ask for less motion. */

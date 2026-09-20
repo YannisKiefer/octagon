@@ -116,7 +116,10 @@ async function pollTasks(){
     if(row.type==="session"){
       try{
         const payload=JSON.parse(row.payload||"{}");
-        const minutes=Math.min(Math.max(parseFloat(payload.duration_minutes)||10, 0.1), 180);
+        const requested=parseFloat(payload.duration_minutes);
+        const minutes=(Number.isFinite(requested) && requested>=0.1)
+          ? Math.min(requested, 180)
+          : 10;
         const isCanceled=()=>{ try{ return getDb().prepare("SELECT status FROM farm_tasks WHERE id=?").get(row.id)?.status==="canceled"; }catch{ return false; } };
         const result=await runSession(minutes, isCanceled);
         // only a still-running task may be completed; a canceled task stays canceled
@@ -124,6 +127,7 @@ async function pollTasks(){
         if(done.changes===1) logEvent("task succeeded", "info", { task:row.id });
       }catch(e){
         getDb().prepare("UPDATE farm_tasks SET status='failed', finished_at=?, error=? WHERE id=? AND status='running'").run(nowIso(), e.message, row.id);
+        updateHealth({session_state:"idle", error:e.message});
         logEvent(`task failed: ${e.message}`, "error", { task:row.id });
       }
     } else {

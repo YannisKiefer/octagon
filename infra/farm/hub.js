@@ -88,6 +88,13 @@ function health(){
 }
 async function main(){
   console.log(`\nOCTAGON HUB — ${SLOTS} slots, ${DUR}m${TEST?', dry run':''}\n`);
+  // sweep tasks orphaned by a previous hub death mid-session
+  try{
+    const db=new Database(DB_PATH);
+    const swept=db.prepare("UPDATE farm_tasks SET status='failed', error='hub went down mid-session', updated_at=? WHERE status='running'").run(new Date().toISOString());
+    if(swept.changes>0) log(`swept ${swept.changes} orphaned running task(s)`);
+    db.close();
+  }catch{}
   if(TEST) console.log('Silent dry run: brains poll the task queue and nothing is spoken. Queue sessions from the dashboard chat or MCP to see them execute.\n');
   const toSpawn=slotConfigs();
   for(let i=0;i<toSpawn.length;i++){

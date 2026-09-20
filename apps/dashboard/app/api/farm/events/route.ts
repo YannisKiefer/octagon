@@ -45,8 +45,8 @@ export async function POST(req: Request) {
       const n = parseFloat(minutesMatch[1]);
       const inHours = Boolean(minutesMatch[2] && /h/.test(minutesMatch[2]));
       const total = inHours ? n * 60 : n;
-      if (!Number.isFinite(total) || total <= 0) badDuration = true;
-      else minutes = Math.min(Math.round(total), 180);
+      if (!Number.isFinite(total) || total < 1) badDuration = true;
+      else minutes = Math.min(Math.ceil(total), 180);
     }
 
     if (badDuration) {

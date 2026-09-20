@@ -13,9 +13,11 @@ const { createRequire } = require('module');
 
 const ROOT = path.join(__dirname, '..');
 const dbArg = process.env.FARM_DB_PATH;
-const DB_PATH = dbArg
-  ? (path.isAbsolute(dbArg) ? dbArg : path.join(ROOT, dbArg))
-  : path.join(ROOT, 'infra', 'db', 'farm.db');
+if (dbArg && !path.isAbsolute(dbArg)) {
+  console.error('FARM_DB_PATH must be an absolute path (relative paths resolve differently per process).');
+  process.exit(1);
+}
+const DB_PATH = dbArg || path.join(ROOT, 'infra', 'db', 'farm.db');
 
 // Resolve better-sqlite3 from infra/farm (where npm install puts it).
 let Database;

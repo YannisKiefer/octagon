@@ -69,7 +69,7 @@ export default withAuth(
       const role = (token.role as string) ?? "viewer";
       // Viewers may read tasks; only admins may change state.
       const isWrite = !["GET", "HEAD", "OPTIONS"].includes(req.method);
-      const isStateChange = isWrite && (pathname.startsWith("/api/farm/tasks") || pathname.startsWith("/api/farm/devices"));
+      const isStateChange = isWrite && (pathname.startsWith("/api/farm/tasks") || pathname.startsWith("/api/farm/devices") || pathname.startsWith("/api/farm/events"));
       if (isStateChange && role !== "admin") {
         return NextResponse.json({ error: "Forbidden: admin role required" }, { status: 403 });
       }
