@@ -1,0 +1,34 @@
+name: Feature request
+description: Propose a change or addition. Octagon is for pacing sessions only; read the checklist first.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Octagon automates iPhones you own for pacing sessions: warming accounts with real taps, keeping devices healthy, and reporting honestly what happened. Proposals that fake engagement or evade platform moderation are out of scope by design and will be closed.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What are you trying to do, and what is missing or awkward today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed behavior
+      description: What should happen instead? Be specific about commands, screens, or tools.
+    validations:
+      required: true
+  - type: checkboxes
+    id: honesty
+    attributes:
+      label: Honesty checklist
+      description: All three boxes are required. Proposals with unchecked boxes will be closed.
+      options:
+        - label: This does not fake engagement (auto likes/comments/follows/DMs)
+          required: true
+        - label: This does not attempt to evade platform moderation
+          required: true
+        - label: This keeps all processing local
+          required: true
