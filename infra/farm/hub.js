@@ -13,17 +13,37 @@ const DUR = parseFloat(getArg('duration','60')); // minutes, fractions allowed
 const TEST = process.argv.includes('--test'); // --test = silent dry run: no TTS, no chatter
 const DB_PATH = process.env.FARM_DB_PATH || path.join(__dirname, '..', 'db', 'farm.db');
 const WORKER = path.join(__dirname, 'farm-brain.js');
-const SLOTS_CFG=[
-  {slot:'1', prefix:'Alpha',   id:'phone1'},
-  {slot:'2', prefix:'Bravo',   id:'phone2'},
-  {slot:'3', prefix:'Charlie', id:'phone3'},
-  {slot:'4', prefix:'Delta',   id:'phone4'},
-];
+
+// Slots come from the device registry (farm_devices), so phones added through
+// the dashboard or MCP are picked up too. Falls back to the four defaults when
+// the registry is empty or unreadable.
+function slotConfigs(){
+  try{
+    const db=new Database(DB_PATH, { readonly:true });
+    const rows=db.prepare("SELECT id, voice_prefix FROM farm_devices WHERE active=1 ORDER BY phone_number LIMIT ?").all(SLOTS);
+    db.close();
+    if(rows.length) return rows.map((r,i)=>({slot:String(i+1), prefix:r.voice_prefix, id:r.id}));
+  }catch(e){ log(`device registry unreadable (${e.message}); using defaults`); }
+  return [
+    {slot:'1', prefix:'Alpha',   id:'phone1'},
+    {slot:'2', prefix:'Bravo',   id:'phone2'},
+    {slot:'3', prefix:'Charlie', id:'phone3'},
+    {slot:'4', prefix:'Delta',   id:'phone4'},
+  ].slice(0, SLOTS);
+}
 const workers={};
 let locked=false, q=[];
 function acquire(slot){ return new Promise(r=>{ const tryA=()=>{ if(!locked){locked=true; r();} else q.push(tryA);}; tryA();});}
 function release(){ locked=false; if(q.length) q.shift()(); }
 function log(m){ console.log(`[HUB] ${m}`); }
+function hubEvent(deviceId, event, level){
+  try{
+    const db=new Database(DB_PATH);
+    db.prepare("INSERT INTO farm_events (id, ts, level, device_id, event, data) VALUES (?,?,?,?,?,?)")
+      .run(require('crypto').randomUUID(), new Date().toISOString(), level||'warn', deviceId, event, '{}');
+    db.close();
+  }catch{}
+}
 
 function spawn(cfg){
   const {slot,prefix,id}=cfg;
@@ -34,14 +54,15 @@ function spawn(cfg){
   const st={proc:child, cfg, status:'starting', last:Date.now(), restarts:0};
   child.on('message', m=>{
     if(m?.type==='heartbeat'){ st.last=Date.now(); st.status='active'; }
-    if(m?.type==='audio-request'){ acquire(slot).then(()=>{ child.send({type:'audio-granted'}); setTimeout(release, m.estimatedDuration||1200); });}
+    if(m?.type==='audio-request'){ acquire(slot).then(()=>{ try{ child.send({type:'audio-granted'}); }catch{} setTimeout(release, m.estimatedDuration||2500); });}
   });
   if(!TEST){ child.stdout.on('data', d=>process.stdout.write(`[S${slot}] ${d}`)); child.stderr.on('data', d=>process.stderr.write(`[S${slot} ERR] ${d}`));}
   child.on('exit', (c,s)=>{
     if(st.status==='stopped') return;
     st.status='offline';
+    hubEvent(cfg.id, `${cfg.prefix} went offline; restarting (up to 3)`, 'warn');
     if(st.restarts<3){ st.restarts++; log(`S${slot} restart ${st.restarts}/3`); setTimeout(()=>{workers[slot]=spawn(cfg); workers[slot].restarts=st.restarts;}, 3000+Math.random()*1500); }
-    else log(`S${slot} max restarts`);
+    else { log(`S${slot} max restarts`); hubEvent(cfg.id, `${cfg.prefix} hit the restart limit and is offline. Restart the hub to bring it back.`, 'error'); }
   });
   workers[slot]=st; return st;
 }
@@ -67,7 +88,7 @@ function health(){
 }
 async function main(){
   console.log(`\nOCTAGON HUB — ${SLOTS} slots, ${DUR}m${TEST?', dry run':''}\n`);
-  const toSpawn=SLOTS_CFG.slice(0, SLOTS);
+  const toSpawn=slotConfigs();
   for(let i=0;i<toSpawn.length;i++){
     spawn(toSpawn[i]);
     if(i<toSpawn.length-1) await new Promise(r=>setTimeout(r, 3000+Math.random()*1500));

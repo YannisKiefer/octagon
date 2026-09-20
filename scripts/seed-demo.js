@@ -12,15 +12,23 @@ const fs = require('fs');
 const { createRequire } = require('module');
 
 const ROOT = path.join(__dirname, '..');
-const DB_PATH = process.env.FARM_DB_PATH || path.join(ROOT, 'infra', 'db', 'farm.db');
+const dbArg = process.env.FARM_DB_PATH;
+const DB_PATH = dbArg
+  ? (path.isAbsolute(dbArg) ? dbArg : path.join(ROOT, dbArg))
+  : path.join(ROOT, 'infra', 'db', 'farm.db');
 
 // Resolve better-sqlite3 from infra/farm (where npm install puts it).
 let Database;
 try {
   Database = require('better-sqlite3');
 } catch {
-  const farmRequire = createRequire(path.join(ROOT, 'infra', 'farm', 'package.json'));
-  Database = farmRequire('better-sqlite3');
+  try {
+    const farmRequire = createRequire(path.join(ROOT, 'infra', 'farm', 'package.json'));
+    Database = farmRequire('better-sqlite3');
+  } catch (e) {
+    console.error('better-sqlite3 is not installed. Run:  cd infra/farm && npm install');
+    process.exit(1);
+  }
 }
 
 const SCHEMA = `

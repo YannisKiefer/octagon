@@ -60,9 +60,10 @@ export default withAuth(
       }
 
       const role = (token.role as string) ?? "viewer";
-      const adminOnlyPaths = ["/api/trigger", "/api/farm/tasks"];
-      const isAdminRoute = adminOnlyPaths.some((p) => pathname.startsWith(p));
-      if (isAdminRoute && role !== "admin") {
+      // Viewers may read tasks; only admins may change state.
+      const isWrite = !["GET", "HEAD", "OPTIONS"].includes(req.method);
+      const isStateChange = isWrite && (pathname.startsWith("/api/farm/tasks") || pathname.startsWith("/api/farm/devices"));
+      if (isStateChange && role !== "admin") {
         return NextResponse.json({ error: "Forbidden: admin role required" }, { status: 403 });
       }
 
@@ -97,6 +98,6 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icon.svg).*)",
   ],
 };

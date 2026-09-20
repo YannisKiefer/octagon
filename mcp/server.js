@@ -34,10 +34,14 @@ const TOOLS = [
 
 async function captureScreen(phoneId){
   let device, udid;
-  const d=db();
   try{
-    device=d.prepare("SELECT id, usb_udid FROM farm_devices WHERE id=?").get(phoneId);
-  } finally { d.close(); }
+    const d=db();
+    try{
+      device=d.prepare("SELECT id, usb_udid FROM farm_devices WHERE id=?").get(phoneId);
+    } finally { d.close(); }
+  }catch(e){
+    return {available:false, reason:`local database unavailable: ${e.message}`};
+  }
   if(!device) return {available:false, reason:`unknown phone ${phoneId}`};
   udid=device.usb_udid;
   if(!udid) return {available:false, reason:`no usb_udid configured for ${phoneId} (set FARM_PHONEn_UDID in .env)`};
@@ -86,8 +90,8 @@ function handle(msg){
         } finally { d.close(); }
       }
       else if(name==="get_events"){ const d=db(); const r=d.prepare("SELECT ts,level,event FROM farm_events WHERE device_id=? ORDER BY ts DESC LIMIT ?").all(args.phoneId, Math.min(Math.max(parseInt(args.limit)||20, 1), 200)); d.close(); text=JSON.stringify(r, null, 2); }
-      else if(name==="get_phone_screen"){ captureScreen(args.phoneId).then(r=>reply(id, {content:[{type:"text", text:JSON.stringify(r, null, 2)}]})); return; }
-      else text=`unknown tool ${name}`;
+      else if(name==="get_phone_screen"){ captureScreen(args.phoneId).then(r=>reply(id, {content:[{type:"text", text:JSON.stringify(r, null, 2)}]})).catch(e=>reply(id, {content:[{type:"text", text:`error: ${e.message}`}], isError:true})); return; }
+      else { text=`unknown tool ${name}`; return reply(id, {content:[{type:"text", text}], isError:true}); }
       return reply(id, {content:[{type:"text", text}]});
     }catch(e){ return reply(id, {content:[{type:"text", text:`error: ${e.message}`}], isError:true}); }
   }

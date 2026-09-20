@@ -66,9 +66,10 @@ async function say(text){
   // hub-managed audio mutex: only one phone should listen at a time
   if(process.env.OCTAGON_HUB_MANAGED){
     await new Promise(res=>{
-      const to=setTimeout(res, 4000);
-      process.once("message", m=>{ if(m?.type==="audio-granted"){ clearTimeout(to); res(); }});
-      if(process.send) process.send({type:"audio-request", estimatedDuration: 900});
+      const onMessage=m=>{ if(m?.type==="audio-granted"){ clearTimeout(to); process.removeListener("message", onMessage); res(); }};
+      const to=setTimeout(()=>{ process.removeListener("message", onMessage); res(); }, 4000);
+      process.on("message", onMessage);
+      if(process.send) process.send({type:"audio-request", estimatedDuration: 2500});
     });
   }
   await new Promise((res,rej)=>{
@@ -78,13 +79,19 @@ async function say(text){
   await sleep(400);
 }
 
-async function runSession(minutes){
+async function runSession(minutes, shouldStop){
   const start=Date.now();
   let swipes=0;
   updateHealth({session_state:"session", error:""});
   logEvent(`session start (${minutes}m${DRY?", dry-run":""})`, "info", { prefix:PREFIX, durationMinutes:minutes, dryRun:DRY });
 
   while(Date.now()-start < minutes*60*1000){
+    if(shouldStop && shouldStop()){
+      updateHealth({session_state:"idle", error:""});
+      logEvent(`session stopped by user after ${swipes} swipes`, "info", { swipes });
+      log(`stopped swipes=${swipes}`);
+      return { swipes, stopped:true };
+    }
     await say(CUE);
     swipes++;
     updateHealth({swipes, last_action:CUE, last_action_at: nowIso(), jitter_variance: 0.35});
@@ -93,25 +100,30 @@ async function runSession(minutes){
   updateHealth({session_state:"idle", error:""});
   logEvent(`session done: ${swipes} swipes in ${minutes}m`, "info", { swipes });
   log(`done swipes=${swipes}`);
-  return swipes;
+  return { swipes, stopped:false };
 }
 
 // Task poll: only "session" tasks execute here. Anything else fails honestly.
 async function pollTasks(){
   try{
-    const row=getDb().prepare("SELECT * FROM farm_tasks WHERE status='scheduled' AND (device_id IS NULL OR device_id=?) ORDER BY scheduled_for LIMIT 1").get(ID);
+    const now=nowIso();
+    const row=getDb().prepare("SELECT * FROM farm_tasks WHERE status='scheduled' AND scheduled_for<=? AND (device_id IS NULL OR device_id=?) ORDER BY scheduled_for LIMIT 1").get(now, ID);
     if(!row) return;
-    getDb().prepare("UPDATE farm_tasks SET status='running', started_at=? WHERE id=?").run(nowIso(), row.id);
+    // atomic claim: only proceed if this process won the row
+    const claimed=getDb().prepare("UPDATE farm_tasks SET status='running', started_at=? WHERE id=? AND status='scheduled'").run(now, row.id);
+    if(claimed.changes!==1) return;
     log(`task ${row.type} ${row.id}`);
     if(row.type==="session"){
       try{
         const payload=JSON.parse(row.payload||"{}");
         const minutes=Math.min(Math.max(parseFloat(payload.duration_minutes)||10, 0.1), 180);
-        await runSession(minutes);
-        getDb().prepare("UPDATE farm_tasks SET status='succeeded', finished_at=?, result=? WHERE id=?").run(nowIso(), "session completed", row.id);
-        logEvent("task succeeded", "info", { task:row.id });
+        const isCanceled=()=>{ try{ return getDb().prepare("SELECT status FROM farm_tasks WHERE id=?").get(row.id)?.status==="canceled"; }catch{ return false; } };
+        const result=await runSession(minutes, isCanceled);
+        // only a still-running task may be completed; a canceled task stays canceled
+        const done=getDb().prepare("UPDATE farm_tasks SET status='succeeded', finished_at=?, result=? WHERE id=? AND status='running'").run(nowIso(), result.stopped?"stopped by user":"session completed", row.id);
+        if(done.changes===1) logEvent("task succeeded", "info", { task:row.id });
       }catch(e){
-        getDb().prepare("UPDATE farm_tasks SET status='failed', finished_at=?, error=? WHERE id=?").run(nowIso(), e.message, row.id);
+        getDb().prepare("UPDATE farm_tasks SET status='failed', finished_at=?, error=? WHERE id=? AND status='running'").run(nowIso(), e.message, row.id);
         logEvent(`task failed: ${e.message}`, "error", { task:row.id });
       }
     } else {
@@ -126,9 +138,9 @@ async function main(){
   // heartbeat to hub
   setInterval(()=>{ if(process.send) process.send({type:"heartbeat", stats:{}, swipeCount:0}); }, 5000);
   process.on("message", m=>{ if(m?.type==="stop") process.exit(0); });
-  // if tasks exist, poll; otherwise run one standalone session
-  const hasTasks=getDb().prepare("SELECT 1 FROM farm_tasks LIMIT 1").get();
-  if(hasTasks) { while(true){ await pollTasks(); await sleep(5000); } }
+  // hub-managed brains poll forever (the hub owns their lifetime).
+  // standalone brains run one session and exit.
+  if(process.env.OCTAGON_HUB_MANAGED){ while(true){ await pollTasks(); await sleep(5000); } }
   else { await runSession(DURATION); process.exit(0); }
 }
 

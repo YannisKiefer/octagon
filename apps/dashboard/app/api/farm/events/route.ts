@@ -37,9 +37,22 @@ export async function POST(req: Request) {
 
     const lower = text.toLowerCase();
     let reply: string;
-    const minutesMatch = lower.match(/(\d{1,3})\s*(min|m\b|minutes?|h\b|hours?)/);
-    let minutes = minutesMatch ? Math.min(parseInt(minutesMatch[1], 10) || 10, 180) : 10;
-    if (minutesMatch && /h\b|hours?/.test(minutesMatch[2])) minutes = Math.min(minutes * 60, 180);
+    const minutesMatch = lower.match(/(\d{1,3}(?:\.\d)?)\s*(hours?|h\b|minutes?|min|m\b)/);
+    let minutes = 10;
+    let badDuration = false;
+    if (minutesMatch) {
+      const n = parseFloat(minutesMatch[1]);
+      const inHours = /h/.test(minutesMatch[2]);
+      const total = inHours ? n * 60 : n;
+      if (!Number.isFinite(total) || total <= 0) badDuration = true;
+      else minutes = Math.min(Math.round(total), 180);
+    }
+
+    if (badDuration) {
+      reply = "How many minutes? Give me a number above zero, like: run 20";
+      const replyEvent = insertFarmEvent(deviceId, reply, "info", { side: "agent" });
+      return NextResponse.json({ success: true, userEvent, replyEvent });
+    }
 
     if (/\b(run|start|session|pace)\b/.test(lower) && !/\b(status|stop|cancel)\b/.test(lower)) {
       const db = getFarmDb({ readonly: false });

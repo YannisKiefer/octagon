@@ -150,8 +150,10 @@ export function ensureFarmSchema(db: Database.Database): void {
 }
 
 function seedFarmDevicesIfEmpty(db: Database.Database): void {
+  // Seed only a completely empty registry. Re-seeding a partially populated
+  // one would resurrect devices the operator deleted.
   const row = db.prepare("SELECT COUNT(*) as c FROM farm_devices").get() as { c: number };
-  if (row.c >= 4) return;
+  if (row.c > 0) return;
 
   const now = new Date().toISOString();
   const defaults: Array<{ phone: number; prefix: string }> = [
@@ -205,7 +207,7 @@ export function listFarmTasks(fromIso?: string, toIso?: string): FarmTask[] {
       )
       .all(fromIso, toIso) as FarmTask[];
   }
-  return db.prepare("SELECT * FROM farm_tasks ORDER BY scheduled_for ASC LIMIT 500").all() as FarmTask[];
+  return db.prepare("SELECT * FROM farm_tasks ORDER BY scheduled_for DESC, created_at DESC LIMIT 500").all() as FarmTask[];
 }
 
 export type FarmEvent = { id: string; ts: string; level: string; device_id: string | null; task_id: string | null; event: string; data: string };
@@ -232,8 +234,10 @@ export function insertFarmEvent(deviceId: string | null, event: string, level = 
 
 export function createFarmDevice(prefix: string, displayName?: string): FarmDevice {
   const db = getFarmDb({ readonly: false });
-  const count = (db.prepare("SELECT COUNT(*) AS c FROM farm_devices").get() as { c: number }).c;
-  const phone = count + 1;
+  // Number from MAX, not COUNT, so deletions cannot cause id collisions.
+  const maxPhone = (db.prepare("SELECT COALESCE(MAX(phone_number), 0) AS m FROM farm_devices").get() as { m: number }).m;
+  const maxId = (db.prepare("SELECT COALESCE(MAX(CAST(SUBSTR(id, 6) AS INTEGER)), 0) AS m FROM farm_devices").get() as { m: number }).m;
+  const phone = Math.max(maxPhone, maxId) + 1;
   const id = `phone${phone}`;
   const now = new Date().toISOString();
   db.prepare("INSERT INTO farm_devices (id, phone_number, display_name, voice_prefix, usb_udid, active, created_at, updated_at) VALUES (?, ?, ?, ?, '', 1, ?, ?)")

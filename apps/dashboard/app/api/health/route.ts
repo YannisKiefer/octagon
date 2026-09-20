@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const dbPath =
+    process.env.FARM_DB_PATH ||
     process.env.OCTRAGON_DB_PATH ||
     path.resolve(process.cwd(), "..", "..", "infra", "db", "farm.db");
 
