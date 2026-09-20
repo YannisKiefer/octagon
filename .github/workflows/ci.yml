@@ -1,0 +1,111 @@
+# CI: farm runtime (seed -> bounded dry run -> tests), dashboard build, secret scan.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  farm-runtime:
+    name: Farm runtime (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: infra/farm/package-lock.json
+
+      - name: Install farm dependencies
+        working-directory: infra/farm
+        run: npm ci
+
+      - name: Syntax-check hub, brain, MCP server and demo seeder
+        run: |
+          node --check infra/farm/hub.js
+          node --check infra/farm/farm-brain.js
+          node --check mcp/server.js
+          node --check scripts/seed-demo.js
+
+      - name: Seed synthetic demo data into a temp database
+        env:
+          FARM_DB_PATH: ${{ runner.temp }}/farm.db
+        run: |
+          set -eo pipefail
+          node scripts/seed-demo.js | tee "$RUNNER_TEMP/seed.log"
+          grep -q "Seeded demo data" "$RUNNER_TEMP/seed.log"
+
+      - name: Run bounded silent hub dry run (stops after 30s)
+        run: |
+          code=0
+          timeout 30 env FARM_DB_PATH="$RUNNER_TEMP/farm.db" \
+            node infra/farm/hub.js --slots=1 --duration=0.05 --test \
+            > "$RUNNER_TEMP/hub-dry.log" 2>&1 || code=$?
+          echo "hub dry-run exit code: $code (0 or 124 expected)"
+          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
+            cat "$RUNNER_TEMP/hub-dry.log"
+            exit "$code"
+          fi
+          grep -q "OCTAGON HUB" "$RUNNER_TEMP/hub-dry.log"
+
+      - name: Seed demo data at the default database path for the test suite
+        run: node scripts/seed-demo.js
+
+      - name: Run test suite against the freshly seeded database
+        run: node tests/test_octagon.mjs
+
+  dashboard:
+    name: Dashboard build (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: apps/dashboard/package-lock.json
+
+      - name: Install dashboard dependencies
+        working-directory: apps/dashboard
+        run: npm ci
+
+      - name: Build the dashboard
+        working-directory: apps/dashboard
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+        run: npm run build
+
+  secrets-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan repository history for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false
