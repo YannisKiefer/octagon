@@ -11,7 +11,7 @@ function getAdminCredentials() {
   if (!user || (!hash && !plain)) {
     throw new Error(
       "[auth] Admin credentials not configured. Set DASHBOARD_ADMIN_USER and " +
-      "DASHBOARD_ADMIN_HASH (bcrypt) or DASHBOARD_ADMIN_PASSWORD in Replit Secrets."
+      "DASHBOARD_ADMIN_HASH (bcrypt) or DASHBOARD_ADMIN_PASSWORD."
     );
   }
   return { user, hash, plain };

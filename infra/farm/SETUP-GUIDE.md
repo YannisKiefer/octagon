@@ -60,7 +60,7 @@ npm run dev
 
 `scripts/seed-demo.js` resets `infra/db/farm.db` and fills it with clearly synthetic demo data (4 phones, a fake chat transcript). Open **http://localhost:3010**. `npm run dev` is a development build: no login required. A production build (`npm run build && npm run start`) enforces NextAuth login with your `DASHBOARD_ADMIN_USER` / `DASHBOARD_ADMIN_PASSWORD`.
 
-What you see: phones on the left, per-phone chat in the center, routines on the right. Everything in demo mode is fake and labeled synthetic.
+What you see: phones on the left, per-phone chat in the center, sessions on the right. Everything in demo mode is fake and labeled synthetic.
 
 ## 5. Dry run: prove the runtime without TTS
 
@@ -102,7 +102,7 @@ node infra/farm/hub.js --slots=4 --duration=60
 ```
 
 - `--duration` is minutes per session, fractions allowed (`--duration=0.2` for a 12-second check).
-- Each brain speaks its prefix cue, the iPhone swipes, and events land in the dashboard chat. Queue more sessions from the chat with `run 20`, check with `status`, cancel with `stop`.
+- Each brain speaks its prefix cue, the iPhone swipes, and events land in the dashboard chat. Queue sessions from the chat with `run 20`. The hub alone starts nothing - it only executes queued sessions, check with `status`, cancel with `stop`.
 - If a brain exits, the hub restarts it up to 3 times. Missed heartbeats mark a phone degraded (15 s) or offline (50 s) in the dashboard.
 
 Open http://localhost:3010 and watch the events appear in the phone's chat while the hub runs.
@@ -131,7 +131,7 @@ Put each UDID into `.env` as `FARM_PHONE1_UDID` (and so on), then start the dash
 
 **SQLITE_BUSY / database is locked.** Another process holds `infra/db/farm.db`. The runtime handles set `busy_timeout` to 5 seconds, but a stuck hub or brain from an earlier run should be closed: look for stray `node infra/farm` processes and stop them.
 
-**Port 3010 busy.** The dashboard scripts pin port 3010. Stop whatever else uses it, or run the dashboard from that directory with an overridden command.
+**Port 3010 busy.** The dashboard scripts pin port 3010. Find it with `lsof -ti :3010` and stop that process, or start the dashboard on another port with `npx next dev -p 3020`, or run the dashboard from that directory with an overridden command.
 
 **better-sqlite3 build errors during npm install.** Use Node 20 or newer (`node -v`), then remove `node_modules` in that package and run `npm install` again.
 

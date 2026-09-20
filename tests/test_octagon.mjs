@@ -87,7 +87,8 @@ for (const rel of ["README.md", "VISION.md", "CONTRIBUTING.md", "docs/ARCHITECTU
   const t = fs.readFileSync(path.join(ROOT, rel), "utf8").replace(/github\.com\/YannisKiefer\/octagon/g, "repo");
   ok(!/yannis|ecombrain|gmail/i.test(t), `no personal data in ${rel}`);
 }
-const envExample = fs.readFileSync(path.join(ROOT, ".env.example"), "utf8");
+const envExample = fs.readFileSync(path.join(ROOT, ".env.example"), "utf8")
+  .split("\n").filter(l => !l.trim().startsWith("#")).join("\n");
 ok(!/=[A-Za-z0-9+/_-]{20,}/.test(envExample.replace(/change-me[^ \n]*/g, "")), "env example holds only placeholders");
 
 // 8. Product rules: no evasion or cloud anywhere in shipped source

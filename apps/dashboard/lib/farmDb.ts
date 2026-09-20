@@ -3,7 +3,7 @@ import path from "path";
 import crypto from "crypto";
 
 const DB_PATH = path.join(
-  process.env.FARM_DB_PATH || process.env.OCTRAGON_DB_PATH || path.resolve(process.cwd(), "..", "..", "infra", "db", "farm.db"),
+  process.env.FARM_DB_PATH || path.resolve(process.cwd(), "..", "..", "infra", "db", "farm.db"),
 );
 
 export type FarmDevice = {

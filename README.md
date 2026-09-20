@@ -77,10 +77,7 @@ Python is not needed.
 ```bash
 git clone https://github.com/YannisKiefer/octagon.git
 cd octagon
-cp .env.example .env
 ```
-
-In `.env`, set `NEXTAUTH_SECRET` (generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) and your `DASHBOARD_ADMIN_USER` / `DASHBOARD_ADMIN_PASSWORD`. Then:
 
 ```bash
 cd infra/farm && npm install
@@ -94,7 +91,9 @@ cd apps/dashboard
 npm run dev
 ```
 
-Open **http://localhost:3010**. `npm run dev` is a development build: no login is required. A production build (`npm run build && npm run start`) enforces NextAuth login with `DASHBOARD_ADMIN_USER` and `DASHBOARD_ADMIN_PASSWORD` from `.env`.
+Open **http://localhost:3010**. That is the whole setup: development mode needs no configuration and no login (local sessions use a built-in development secret).
+
+For a production build, create `apps/dashboard/.env.local` (use `apps/dashboard/.env.example` as the template), set `NEXTAUTH_SECRET` (generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) plus your `DASHBOARD_ADMIN_USER` / `DASHBOARD_ADMIN_PASSWORD`, then `npm run build && npm run start`. Login is enforced with those credentials.
 
 <details>
 <summary><strong>Connect real iPhones</strong></summary>
@@ -114,7 +113,7 @@ Open **http://localhost:3010**. `npm run dev` is a development build: no login i
    node infra/farm/farm-brain.js --slot=1 --prefix=Alpha --duration=0.2 --log
    ```
 
-6. Run the fleet: `node infra/farm/hub.js --slots=4 --duration=60` (add `--test` for a silent dry run). Sessions appear as events in the dashboard chat.
+6. Run the fleet: `node infra/farm/hub.js --slots=4` (add `--test` for a silent dry run). The hub itself does not create sessions - queue one from the dashboard chat (`run 20`) or the MCP `run_session` tool, and the brain executes it, with progress landing in the chat.
 
 Full guide: [infra/farm/SETUP-GUIDE.md](infra/farm/SETUP-GUIDE.md)
 
@@ -171,7 +170,7 @@ In one SQLite file, `infra/db/farm.db`. It stays on your Mac. Delete it to erase
 
 ## Contributing
 
-Small PRs, one feature at a time. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Small PRs, one feature at a time. See [CONTRIBUTING.md](CONTRIBUTING.md). Run the checks with `node tests/test_octagon.mjs`.
 
 ## Security
 

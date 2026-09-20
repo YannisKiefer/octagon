@@ -20,7 +20,7 @@ function validateEnv(vars: { key: string; description: string }[]): void {
       "══════════════════════════════════════════════════════",
       ...lines,
       "",
-      "  Add these to your .env.local or Replit Secrets.",
+      "  Add these to your .env or .env.local file.",
       "══════════════════════════════════════════════════════",
       "",
     ].join("\n");

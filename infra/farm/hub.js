@@ -88,6 +88,7 @@ function health(){
 }
 async function main(){
   console.log(`\nOCTAGON HUB — ${SLOTS} slots, ${DUR}m${TEST?', dry run':''}\n`);
+  if(TEST) console.log('Silent dry run: brains poll the task queue and nothing is spoken. Queue sessions from the dashboard chat or MCP to see them execute.\n');
   const toSpawn=slotConfigs();
   for(let i=0;i<toSpawn.length;i++){
     spawn(toSpawn[i]);

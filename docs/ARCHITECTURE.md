@@ -65,8 +65,8 @@ Schema is created by `lib/farmDb.ts` (dashboard), `scripts/seed-demo.js`, or at 
 `node infra/farm/hub.js --slots=4 --duration=60` (`--duration` in minutes, fractions allowed). `--test` means silent dry run: children get `--dry-run` and no TTS happens.
 
 - Spawns one `farm-brain.js` per slot, staggered 3 to 4.5 seconds, with `OCTAGON_HUB_MANAGED=1` in the child environment and `--id=phoneN` matching the DB device ids.
-- Slots are fixed: 1 Alpha, 2 Bravo, 3 Charlie, 4 Delta (`phone1`..`phone4`).
-- Audio mutex: a child sends `audio-request`; the hub grants `audio-granted` and releases the lock after the child's estimated duration (default 1200 ms). Only one brain speaks at a time.
+- Slots come from the farm_devices registry (defaults Alpha/Bravo/Charlie/Delta only when the registry is empty) (`phone1`..`phone4`).
+- Audio mutex: a child sends `audio-request`; the hub grants `audio-granted` and releases the lock after the child's estimated duration (default 2500 ms). Only one brain speaks at a time.
 - Restart budget: if a child exits, the hub restarts it after 3 to 4.5 seconds, at most 3 times per slot.
 - Health loop every 5 seconds: a child whose last heartbeat is 3 or more intervals old (15 s) is marked `degraded`; 10 or more (50 s) marks it `offline`. The same tick writes `hub_status`.
 - SIGINT/SIGTERM: sends `stop` to all children, then exits.

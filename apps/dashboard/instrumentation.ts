@@ -22,11 +22,11 @@ export async function register() {
       const msg = [
         "",
         "══════════════════════════════════════════════════════",
-        "  OCTRAGON DASHBOARD — MISSING REQUIRED ENV VARS",
+        "  OCTAGON DASHBOARD — MISSING REQUIRED ENV VARS",
         "══════════════════════════════════════════════════════",
         ...lines,
         "",
-        "  Add these to Replit Secrets before starting the server.",
+        "  Add these to your .env file before starting the server.",
         "══════════════════════════════════════════════════════",
         "",
       ].join("\n");
@@ -36,7 +36,7 @@ export async function register() {
       }
     }
 
-    console.log(`[instrumentation] DB: sqlite (Supabase removed for open-source), NODE_ENV: ${process.env.NODE_ENV}`);
+    console.log(`[instrumentation] DB: local sqlite, NODE_ENV: ${process.env.NODE_ENV}`);
     // ponytail: scheduler removed — hub owns tasks, single cron if needed add when measured
     try { const { getFarmDb } = await import("./lib/farmDb"); getFarmDb(); } catch {}
   }
