@@ -30,6 +30,13 @@ function checkRateLimit(ip: string): { allowed: boolean; remaining: number; rese
   return { allowed: entry.count <= MAX_REQUESTS, remaining, resetAt: entry.windowStart + WINDOW_MS };
 }
 
+// The middleware needs the secret itself; in development fall back to the
+// same ephemeral secret as lib/auth so zero-config local dev works.
+const DEV_SECRET = process.env.NODE_ENV !== "production"
+  ? "octagon-local-development-secret-do-not-use-in-production"
+  : undefined;
+const AUTH_SECRET = process.env.NEXTAUTH_SECRET || DEV_SECRET;
+
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
@@ -77,6 +84,7 @@ export default withAuth(
     return NextResponse.next();
   },
   {
+    secret: AUTH_SECRET,
     callbacks: {
       authorized({ token, req }) {
         const pathname = req.nextUrl.pathname;

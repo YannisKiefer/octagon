@@ -29,8 +29,14 @@ async function verifyPassword(plain: string, hash: string, plainFallback: string
   return plain === plainFallback;
 }
 
+// Development needs zero configuration: an ephemeral secret keeps local
+// sessions working without a .env file. Production requires a real secret.
+const DEV_SECRET = process.env.NODE_ENV !== "production"
+  ? "octagon-local-development-secret-do-not-use-in-production"
+  : undefined;
+
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET ?? DEV_SECRET,
   session: {
     strategy: "jwt",
     maxAge: 8 * 60 * 60,

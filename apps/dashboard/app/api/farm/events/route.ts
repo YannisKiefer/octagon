@@ -37,12 +37,13 @@ export async function POST(req: Request) {
 
     const lower = text.toLowerCase();
     let reply: string;
-    const minutesMatch = lower.match(/(\d{1,3}(?:\.\d)?)\s*(hours?|h\b|minutes?|min|m\b)/);
+    // "run 20" means 20 minutes; "run 1.5h" means 90. A bare "run" defaults to 10.
+    const minutesMatch = lower.match(/(\d{1,3}(?:\.\d)?)\s*(hours?|h\b|minutes?|min|m\b)?/);
     let minutes = 10;
     let badDuration = false;
     if (minutesMatch) {
       const n = parseFloat(minutesMatch[1]);
-      const inHours = /h/.test(minutesMatch[2]);
+      const inHours = Boolean(minutesMatch[2] && /h/.test(minutesMatch[2]));
       const total = inHours ? n * 60 : n;
       if (!Number.isFinite(total) || total <= 0) badDuration = true;
       else minutes = Math.min(Math.round(total), 180);
