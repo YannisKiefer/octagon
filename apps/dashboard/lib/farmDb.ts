@@ -37,7 +37,7 @@ export type FarmDeviceHealth = {
 
 export type FarmTask = {
   id: string;
-  type: "warmup" | "post" | "audit" | "smoke" | "dm" | "outreach" | "scout" | "scroll";
+  type: "session";
   device_id: string | null;
   scheduled_for: string;
   status: "scheduled" | "running" | "succeeded" | "failed" | "canceled";
@@ -176,17 +176,8 @@ function seedFarmDevicesIfEmpty(db: Database.Database): void {
   `);
 
   for (const d of defaults) {
-    let nicheName = `Phone ${d.phone}`;
-    try {
-      const niche = db
-        .prepare("SELECT niche_name FROM niche_config WHERE phone_number = ?")
-        .get(d.phone) as { niche_name?: string } | undefined;
-      if (niche?.niche_name) nicheName = niche.niche_name;
-    } catch {
-      // niche_config may not exist in minimal DBs; fall back to default
-    }
     const id = `phone${d.phone}`;
-    const displayName = `${nicheName} (Phone ${d.phone})`;
+    const displayName = `${getPrefix(d.phone, d.prefix)} (Phone ${d.phone})`;
     insertDevice.run(id, d.phone, displayName, getPrefix(d.phone, d.prefix), getUdid(d.phone), now, now);
     insertHealth.run(id, now);
   }

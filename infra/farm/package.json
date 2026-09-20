@@ -1,25 +1,18 @@
 {
   "name": "octagon-farm",
-  "version": "2.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Octragon Phone Farm — Voice Control Orchestrator",
+  "description": "Octagon farm runtime - hub, per-phone session brains, local SQLite",
   "main": "hub.js",
   "scripts": {
     "hub": "node hub.js --slots=4 --duration=60",
-    "hub:test": "node hub.js --slots=2 --duration=5 --test",
-    "warmup:tiktok": "node farm-brain.js --platform=tiktok --slot=1 --prefix=Alpha --duration=30",
-    "warmup:instagram": "node farm-brain.js --platform=instagram --slot=3 --prefix=Charlie --duration=30",
-    "warmup:youtube": "node farm-brain.js --platform=youtube --slot=4 --prefix=Delta --duration=30",
-    "post:tiktok": "node posting/voice-post-flow.js --platform=tiktok --slot=1 --prefix=Alpha",
-    "post:instagram": "node posting/voice-post-flow.js --platform=instagram --slot=3 --prefix=Charlie",
-    "audit": "node audit/parity-scorer.js",
-    "audit:json": "node audit/parity-scorer.js --json",
-    "stealth": "node stealth-check.js"
+    "hub:dry": "node hub.js --slots=4 --duration=60 --test",
+    "session": "node farm-brain.js --slot=1 --prefix=Alpha --duration=30 --dry-run --log"
   },
   "dependencies": {
-    "better-sqlite3": "^11.0.0",
-    "chalk": "^4.1.2",
-    "cli-table3": "^0.6.5",
-    "ora": "^5.4.1"
+    "better-sqlite3": "^12.11.1"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

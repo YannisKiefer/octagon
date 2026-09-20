@@ -6,7 +6,7 @@ import type { FarmTaskType } from "@/lib/farmTypes";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const VALID_TASK_TYPES: FarmTaskType[] = ["warmup", "audit", "post", "smoke", "dm", "outreach", "scout", "scroll"];
+const VALID_TASK_TYPES: FarmTaskType[] = ["session"];
 
 function isTaskType(v: any): v is FarmTaskType {
   return VALID_TASK_TYPES.includes(v);
