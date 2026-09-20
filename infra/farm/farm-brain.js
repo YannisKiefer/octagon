@@ -42,7 +42,7 @@ function jitter(baseMs){
 
 let db=null;
 function getDb(){
-  if(!db) { db=new Database(DB_PATH); db.pragma("journal_mode=WAL"); }
+  if(!db) { db=new Database(DB_PATH); db.pragma("journal_mode=WAL"); db.pragma("busy_timeout=5000"); }
   return db;
 }
 function updateHealth(patch){

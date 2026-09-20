@@ -57,6 +57,7 @@ function health(){
     const active=Object.values(workers).filter(w=>w.status==='active').length;
     try{
       const db=new Database(DB_PATH);
+      db.pragma("busy_timeout=5000");
       // handle drift from older schemas: drop hub_status and recreate once
       try{ const cols=db.prepare("PRAGMA table_info(hub_status)").all().map(c=>c.name); if(cols.length && !cols.includes("active")) db.exec("DROP TABLE hub_status"); }catch{}
       db.exec(`CREATE TABLE IF NOT EXISTS hub_status(id TEXT PRIMARY KEY, active INTEGER, locked INTEGER, ts TEXT)`);
