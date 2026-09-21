@@ -432,6 +432,13 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(async () => {
     buildMenu();
 
+    // Dock icon: the packed icns covers packaged builds, but dev/unpacked
+    // launches otherwise show the generic Electron icon.
+    if (process.platform === "darwin" && app.dock) {
+      try { app.dock.setIcon(path.join(__dirname, "build", "icon.png")); }
+      catch (e) { log(`dock icon: ${e.message}`); }
+    }
+
     if (!SMOKE) startHub(); // smoke runs server + window only
 
     let url;
