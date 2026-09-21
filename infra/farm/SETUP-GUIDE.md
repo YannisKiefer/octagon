@@ -37,10 +37,10 @@ cp .env.example .env
 
 Edit `.env`:
 
-- `NEXTAUTH_SECRET` - generate one: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
-- `DASHBOARD_ADMIN_USER` and `DASHBOARD_ADMIN_PASSWORD` - used by the production build's login.
 - `FARM_PHONE1_PREFIX`..`FARM_PHONE4_PREFIX` - the voice prefixes, `Alpha`, `Bravo`, `Charlie`, `Delta` by default. Leave them as they are unless you change the Voice Control commands to match.
 - `FARM_PHONE1_UDID`..`FARM_PHONE4_UDID` - optional, only needed for screen capture (step 8).
+
+There is no login and no required auth configuration - the dashboard is local-only.
 
 ## 3. Install
 
@@ -58,7 +58,7 @@ cd apps/dashboard
 npm run dev
 ```
 
-`scripts/seed-demo.js` resets `infra/db/farm.db` and fills it with clearly synthetic demo data (4 phones, a fake chat transcript). Open **http://localhost:3010**. `npm run dev` is a development build: no login required. A production build (`npm run build && npm run start`) enforces NextAuth login with your `DASHBOARD_ADMIN_USER` / `DASHBOARD_ADMIN_PASSWORD`.
+`scripts/seed-demo.js` resets `infra/db/farm.db` and fills it with clearly synthetic demo data (4 phones, a fake chat transcript). Open **http://localhost:3010**. No login - the dashboard is local-only; the same is true for a production build (`npm run build && npm run start`).
 
 What you see: phones on the left, per-phone chat in the center, sessions on the right. Everything in demo mode is fake and labeled synthetic.
 

@@ -83,7 +83,7 @@ async function runSession(minutes, shouldStop){
   const start=Date.now();
   let swipes=0;
   updateHealth({session_state:"session", error:""});
-  logEvent(`session start (${minutes}m${DRY?", dry-run":""})`, "info", { prefix:PREFIX, durationMinutes:minutes, dryRun:DRY });
+  logEvent(`session start (${minutes}m${DRY?", dry-run":""})`, "info", { kind:"session", prefix:PREFIX, durationMinutes:minutes, dryRun:DRY });
 
   while(Date.now()-start < minutes*60*1000){
     if(shouldStop && shouldStop()){
@@ -98,7 +98,7 @@ async function runSession(minutes, shouldStop){
     await sleep(jitter(3800));
   }
   updateHealth({session_state:"idle", error:""});
-  logEvent(`session done: ${swipes} swipes in ${minutes}m`, "info", { swipes });
+  logEvent(`session done: ${swipes} swipes in ${minutes}m`, "info", { kind:"session", swipes });
   log(`done swipes=${swipes}`);
   return { swipes, stopped:false };
 }

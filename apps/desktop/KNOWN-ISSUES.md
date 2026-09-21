@@ -90,15 +90,12 @@ Consequences:
 - No auto-update (Squirrel/electron-updater require signed, notarized
   builds). Deferred entirely.
 
-## 5. Login currently required inside the desktop app
+## 5. Login removed - none required
 
-The shell sets `OCTAGON_DESKTOP=1` for the bundled server, per the agreed
-auth contract that the dashboard middleware will honor this env. Until the
-middleware change lands, the production login flow applies unchanged: the app
-generates a local admin pair on first run (`<userData>/local-admin.json`,
-0600) so it is usable out of the box, but the operator sees the login page.
-The shell cannot fix this from the desktop side without touching middleware
-(owned elsewhere).
+Earlier builds showed a login page in production. The dashboard is now
+local-only open-source software with no login and no accounts; the bundled
+server needs no auth environment variables. `OCTAGON_DESKTOP=1` is still set
+for the bundled server as a general process marker.
 
 ## 6. Icon is square, not rounded
 

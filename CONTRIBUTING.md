@@ -37,7 +37,7 @@ You need Node 20 or newer. Hardware features need macOS, but the dry-run path wo
    npm run dev --prefix apps/dashboard
    ```
 
-   Open http://localhost:3010. The dashboard also ships `apps/dashboard/.env.example` if you want to change the default login credentials.
+   Open http://localhost:3010. No login - the dashboard is local-only.
 
 6. Run the checks:
 

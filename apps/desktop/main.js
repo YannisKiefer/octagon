@@ -12,7 +12,6 @@ const path = require('path');
 const fs = require('fs');
 const net = require('net');
 const http = require('http');
-const crypto = require('crypto');
 
 const DEV_URL = process.env.NEXT_DEV_URL || ''; // e.g. http://localhost:3010
 const IS_DEV = !!DEV_URL;
@@ -67,7 +66,7 @@ function waitForServer(port, timeoutMs = 30000) {
   return new Promise((resolve, reject) => {
     const tryOnce = () => {
       const req = http.get({ host: '127.0.0.1', port, path: '/api/health', timeout: 2000 }, (res) => {
-        res.resume(); // any HTTP response means the server is up (login redirects included)
+        res.resume(); // any HTTP response means the server is up
         if (res.statusCode < 500) resolve(res.statusCode);
         else retry();
       });
@@ -84,40 +83,6 @@ function waitForServer(port, timeoutMs = 30000) {
 
 function userDataPath(name) {
   return path.join(app.getPath('userData'), name);
-}
-
-// NextAuth requires a secret in production. The desktop app persists a random
-// one in userData so sessions survive restarts without any user setup.
-function ensureNextauthSecret() {
-  const file = userDataPath('nextauth-secret.txt');
-  try {
-    const secret = fs.readFileSync(file, 'utf8').trim();
-    if (secret.length >= 32) { process.env.NEXTAUTH_SECRET = secret; return; }
-  } catch { /* first run */ }
-  const secret = crypto.randomBytes(32).toString('hex');
-  fs.mkdirSync(app.getPath('userData'), { recursive: true });
-  fs.writeFileSync(file, secret + '\n', { mode: 0o600 });
-  process.env.NEXTAUTH_SECRET = secret;
-}
-
-// The dashboard's instrumentation hook hard-fails at boot in production when
-// admin credentials are missing. Operators can bring their own through the
-// environment (DASHBOARD_ADMIN_USER + DASHBOARD_ADMIN_PASSWORD/HASH); when
-// absent we mint a local pair and persist it in userData (mode 0600) so the
-// app works out of the box on a single machine.
-function ensureLocalAdminCredentials() {
-  if (process.env.DASHBOARD_ADMIN_USER && (process.env.DASHBOARD_ADMIN_PASSWORD || process.env.DASHBOARD_ADMIN_HASH)) return;
-  const file = userDataPath('local-admin.json');
-  let creds = null;
-  try { creds = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { /* first run */ }
-  if (!creds || !creds.user || !creds.password) {
-    creds = { user: 'admin', password: crypto.randomBytes(12).toString('base64url') };
-    fs.mkdirSync(app.getPath('userData'), { recursive: true });
-    fs.writeFileSync(file, JSON.stringify(creds, null, 2), { mode: 0o600 });
-  }
-  process.env.DASHBOARD_ADMIN_USER = creds.user;
-  process.env.DASHBOARD_ADMIN_PASSWORD = creds.password;
-  log(`local admin credentials: user="${creds.user}" (password in ${file})`);
 }
 
 function childEnv(extra) {
@@ -155,14 +120,11 @@ function startNextServer(port) {
     return false;
   }
   serverPort = port;
-  ensureNextauthSecret();
-  ensureLocalAdminCredentials();
   nextProc = spawn(process.execPath, [SERVER_JS], {
     env: childEnv({
       NODE_ENV: 'production',
       PORT: String(port),
       HOSTNAME: '127.0.0.1',
-      NEXTAUTH_URL: `http://127.0.0.1:${port}`,
       NEXT_TELEMETRY_DISABLED: '1',
     }),
     stdio: ['ignore', 'pipe', 'pipe'],

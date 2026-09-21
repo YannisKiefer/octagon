@@ -105,10 +105,8 @@ then runs `gate:packaged`:
 | `NODE_ENV` | `production` |
 | `PORT` / `HOSTNAME` | random free port / `127.0.0.1` |
 | `FARM_DB_PATH` | `<userData>/farm.db` (`~/Library/Application Support/Octagon/`) |
-| `OCTAGON_DESKTOP` | `1` - **auth contract**: the dashboard middleware is expected to honor this env for the desktop app. Until that lands, production auth applies as-is (see below). |
-| `NEXTAUTH_URL` | `http://127.0.0.1:<port>` |
-| `NEXTAUTH_SECRET` | generated once, persisted at `<userData>/nextauth-secret.txt` (0600) |
-| `DASHBOARD_ADMIN_USER` / `DASHBOARD_ADMIN_PASSWORD` | pass through from your environment if you set both; otherwise a local pair is generated on first run and stored at `<userData>/local-admin.json` (0600). The server's instrumentation hook refuses to boot in production without these. |
+| `OCTAGON_DESKTOP` | `1` - marks the process as the desktop-bundled server. The dashboard has no login; the bundled server is loopback-only, so no auth variables are needed. |
+| `NEXT_TELEMETRY_DISABLED` | `1` |
 
 ## Signing / Gatekeeper (read before distributing)
 

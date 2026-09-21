@@ -17,6 +17,20 @@ export type FarmDevice = {
   updated_at: string;
 };
 
+export type FarmAgentRole = "phone" | "monitor" | "supervisor" | "custom";
+
+export type FarmAgent = {
+  id: string;
+  name: string;
+  role: FarmAgentRole;
+  device_id: string | null;
+  color: string;
+  status: string;
+  active: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type FarmDeviceHealth = {
   device_id: string;
   usb_connected: number;
@@ -60,6 +74,7 @@ function getFarmDbRW(): Database.Database {
     _dbRW.pragma("busy_timeout = 5000"); // ponytail: 5s, fixes SQLITE_BUSY on 4-phone concurrent
     ensureFarmSchema(_dbRW);
     seedFarmDevicesIfEmpty(_dbRW);
+    seedFarmAgentsIfEmpty(_dbRW);
   }
   return _dbRW;
 }
@@ -150,6 +165,15 @@ export function ensureFarmSchema(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_farm_events_ts ON farm_events(ts);
     CREATE INDEX IF NOT EXISTS idx_farm_events_device ON farm_events(device_id);
     CREATE INDEX IF NOT EXISTS idx_farm_events_device_ts ON farm_events(device_id, ts DESC);
+
+    CREATE TABLE IF NOT EXISTS farm_agents (
+      id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, role TEXT NOT NULL DEFAULT 'phone',
+      device_id TEXT, color TEXT NOT NULL DEFAULT '#529BFF',
+      status TEXT NOT NULL DEFAULT 'idle', active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_farm_agents_device ON farm_agents(device_id);
+    CREATE INDEX IF NOT EXISTS idx_farm_agents_active ON farm_agents(active);
   `);
 }
 
@@ -188,6 +212,50 @@ function seedFarmDevicesIfEmpty(db: Database.Database): void {
     insertDevice.run(id, d.phone, displayName, getPrefix(d.phone, d.prefix), getUdid(d.phone), now, now);
     insertHealth.run(id, now);
   }
+}
+
+// One phone-agent color per device, rotating by phone_number so two agents
+// never share a color within the default fleet.
+const AGENT_COLORS = ["#529BFF", "#F59E0B", "#A78BFA", "#F97070", "#7F8B9B"];
+
+// The farm's standing crew, created once: a supervisor everyone can address,
+// a monitor, and one phone agent per registered device. Only seeds when
+// farm_agents is completely empty - user-created agents are never overwritten.
+function seedFarmAgentsIfEmpty(db: Database.Database): void {
+  const row = db.prepare("SELECT COUNT(*) as c FROM farm_agents").get() as { c: number };
+  if (row.c > 0) return;
+
+  const now = new Date().toISOString();
+  const insertAgent = db.prepare(`
+    INSERT OR IGNORE INTO farm_agents
+    (id, name, role, device_id, color, status, active, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, 'idle', 1, ?, ?)
+  `);
+
+  // One phone agent per EXISTING device (the device seeder has just run, so on
+  // a fresh database that is the default four).
+  const devices = db.prepare("SELECT id, phone_number, voice_prefix FROM farm_devices ORDER BY phone_number").all() as Array<{
+    id: string;
+    phone_number: number;
+    voice_prefix: string;
+  }>;
+
+  insertAgent.run(crypto.randomUUID(), "Nova", "supervisor", null, "#F5A524", now, now);
+  insertAgent.run(crypto.randomUUID(), "Sentry", "monitor", null, "#30D158", now, now);
+  for (const d of devices) {
+    const color = AGENT_COLORS[(d.phone_number - 1) % AGENT_COLORS.length];
+    insertAgent.run(crypto.randomUUID(), `${d.voice_prefix} Agent`, "phone", d.id, color, now, now);
+  }
+}
+
+export function listFarmAgents(): FarmAgent[] {
+  return getFarmDb({ readonly: true })
+    .prepare("SELECT * FROM farm_agents WHERE active = 1 ORDER BY created_at")
+    .all() as FarmAgent[];
+}
+
+export function getFarmAgent(id: string): FarmAgent | undefined {
+  return getFarmDb({ readonly: true }).prepare("SELECT * FROM farm_agents WHERE id = ?").get(id) as FarmAgent | undefined;
 }
 
 export function listFarmDevices(): FarmDevice[] {
@@ -290,7 +358,7 @@ type EventRow = { id: string; ts: string; device_id: string | null; event: strin
 // one running total per device and we keep no historical snapshots, so a
 // window-over-window delta cannot be computed yet. deltaPct is therefore
 // always null for now; the UI renders the delta chip only when it is non-null.
-function humanizeTaskTitle(type: string, payload: string): string {
+export function humanizeTaskTitle(type: string, payload: string): string {
   if (type !== "session") return type;
   try {
     const parsed = JSON.parse(payload || "{}") as { duration_minutes?: unknown };

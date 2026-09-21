@@ -1,10 +1,10 @@
 "use client";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   Battery,
+  Bot,
   ChevronDown,
   CircleCheck,
   Clock,
@@ -31,6 +31,7 @@ import {
   TitleBar,
 } from "@/components/ui";
 import { DeviceIdentity, PhonePreview } from "@/components/inspector";
+import { isActiveAgent } from "@/components/agents";
 import type { FarmDevice, FarmDeviceHealth } from "@/lib/farmTypes";
 
 // Octagon fleet view - devices, metrics and the activity queue.

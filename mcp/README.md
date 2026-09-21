@@ -50,7 +50,7 @@ One phone with its health record.
 
 ### run_session
 
-Queues a pacing session (swipe pacing over iOS Voice Control). This only inserts a scheduled task: it executes while the hub is running, not otherwise. Check progress with `get_events`.
+Queues a pacing session (swipe pacing over iOS Voice Control). This only inserts a scheduled task: it executes while the hub is running, not otherwise. The session appears in the group chat and can be handed off to another agent via `handoff_task`. Check progress with `get_events`.
 
 ```json
 { "type": "object", "properties": { "slot": { "type": "number", "minimum": 1, "maximum": 8 }, "minutes": { "type": "number", "default": 10, "minimum": 1, "maximum": 180 } }, "required": ["slot"] }
@@ -72,10 +72,43 @@ Captures the phone screen. Requirements: libimobiledevice installed (`brew insta
 { "type": "object", "properties": { "phoneId": { "type": "string" } }, "required": ["phoneId"] }
 ```
 
+### list_agents
+
+All active agents of the multi-agent layer, with their id, name, role, device and status.
+
+```json
+{ "type": "object", "properties": {} }
+```
+
+### create_agent
+
+Creates an agent. `role` is one of `phone`, `monitor`, `supervisor`, `custom`. A phone agent must reference an existing device, and a device can hold only one phone agent. Names are 2-24 characters and unique case-insensitively.
+
+```json
+{ "type": "object", "properties": { "name": { "type": "string", "minLength": 2, "maxLength": 24 }, "role": { "type": "string", "enum": ["phone", "monitor", "supervisor", "custom"] }, "device_id": { "type": "string" } }, "required": ["name", "role"] }
+```
+
+### assign_agent
+
+Moves an active agent to another registered device.
+
+```json
+{ "type": "object", "properties": { "agentId": { "type": "string" }, "deviceId": { "type": "string" } }, "required": ["agentId", "deviceId"] }
+```
+
+### handoff_task
+
+Hands a task to a phone agent: the task moves to that agent's device and a handoff event lands in the group chat. Monitor and supervisor agents observe and coordinate but do not execute tasks, so handing off to them returns an explicit refusal and moves nothing.
+
+```json
+{ "type": "object", "properties": { "taskId": { "type": "string" }, "toAgentId": { "type": "string" }, "note": { "type": "string" } }, "required": ["taskId", "toAgentId"] }
+```
+
 ## Scope and security
 
 - Local stdio only. The server has no network listener and no auth, by design. Do not expose it over HTTP or run it on a shared machine without understanding that every local process can talk to it.
-- The server opens the database read-only, except `run_session`, which inserts one scheduled task.
+- The server opens the database read-only, except `run_session`, `create_agent`, `assign_agent` and `handoff_task`, which write scheduled tasks, agents and events.
+- Agents are the multi-agent layer (supervisor, monitor, phone) shared with the dashboard: the same `farm_agents` rows and group-chat events, whatever tool edits them.
 - Automating social accounts can violate platform terms. Octagon automates only what you configure on devices you own; you are responsible for how you use it.
 
 ## Smoke test

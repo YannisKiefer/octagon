@@ -35,17 +35,19 @@ Routes:
 - `/api/farm` and `/api/farm/devices` - devices plus their health rows.
 - `/api/farm/events` - `GET` lists recent events (filter by `phoneId`); `POST` is the chat brain (below).
 - `/api/farm/tasks` and `/api/farm/tasks/[id]` - scheduled and finished tasks.
+- `/api/agents`, `/api/agents/[id]` and `/api/agents/handoff` - the farm's named agents (supervisor, monitor, one per phone) and task handoffs between them.
+- `/api/farm/demo` - seeds a fresh database with the same synthetic demo transcript as `scripts/seed-demo.js` (409 if the database is not empty).
 - `/api/health` - liveness.
-- `/api/auth/[...nextauth]` - NextAuth credentials login.
 
-Auth: in development (`npm run dev`) the middleware lets every request through. A production build enforces NextAuth login with `DASHBOARD_ADMIN_USER` / `DASHBOARD_ADMIN_PASSWORD` (or `DASHBOARD_ADMIN_HASH`) from `.env`; `/api/farm/tasks` additionally requires the admin role. The middleware also rate-limits to 100 requests per minute per IP.
+Auth: none. Octagon is local-only open-source software - download it, open http://localhost:3010 and go. There is no login, no accounts and no middleware.
 
 ### Chat brain (POST /api/farm/events)
 
 Rule-based, in `app/api/farm/events/route.ts`. It stores the user message as an event, acts on what it recognizes, and stores its reply as another event:
 
+- A message addressed with `@<name>` (for example `@Nova status`) is answered by that agent; anything else is answered by the supervisor "Nova". The reply event's `data` carries `{"side":"agent","agentId":...,"agentName":...}`.
 - `run <minutes>` (also "start", "session", "pace") - inserts a `session` row into `farm_tasks`, capped at 180 minutes.
-- `status` / `health` / `report` - reads `farm_device_health` for the open phone.
+- `status` / `health` / `report` - reads `farm_device_health` for the open phone. A supervisor or monitor asked for status without a device answers with an aggregate of all devices (the monitor adds the queued task count).
 - `stop` / `cancel` - sets all `scheduled`/`running` tasks to `canceled`.
 - Wording about posting, uploading, or publishing - an explicit "not implemented" reply. The roadmap is mentioned; nothing is executed.
 - Anything else - a reply that the message was only logged, listing what it can act on.
@@ -55,9 +57,10 @@ Rule-based, in `app/api/farm/events/route.ts`. It stores the user message as an 
 Schema is created by `lib/farmDb.ts` (dashboard), `scripts/seed-demo.js`, or at runtime by hub and brain as needed.
 
 - `farm_devices` - `id` (`phone1`..`phone4`), `phone_number`, `display_name`, `voice_prefix` (Alpha, Bravo, Charlie, Delta), `usb_udid`, `active`.
+- `farm_agents` - the named agents of the farm: `name`, `role` (`supervisor`, `monitor`, `phone`, `custom`), `device_id` (phone agents only), `color`, `status`, `active`. Seeded with supervisor "Nova", monitor "Sentry" and one agent per device on first run.
 - `farm_device_health` - one row per device: `session_state`, `swipes`, `last_action`, `last_action_at`, `error`, `updated_at`, and legacy counters (`likes`, `saves`, `comments`, `profiles`) that the current runtime never writes.
 - `farm_tasks` - `type`, `device_id`, `status` (`scheduled`, `running`, `succeeded`, `failed`, `canceled`), `payload` (JSON), `result`, `error`, timestamps.
-- `farm_events` - `ts`, `level`, `device_id`, `event` (the chat bubble text), `data` (JSON, for example `{"side":"user"}`). Indexed on `ts` and `(device_id, ts DESC)`.
+- `farm_events` - `ts`, `level`, `device_id`, `event` (the chat bubble text), `data` (JSON, for example `{"side":"user"}` or `{"side":"agent","agentId":"...","agentName":"Nova"}`). Indexed on `ts` and `(device_id, ts DESC)`.
 - `hub_status` - single row `hub` written by the hub every 5 seconds: `active` count, `locked` (audio lock), `ts`. The hub recreates the table if an older schema is found.
 
 ## Hub (infra/farm/hub.js)

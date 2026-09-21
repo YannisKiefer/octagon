@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -22,12 +21,17 @@ import {
   StatusChip,
   DeviceAvatar,
   EventMessage,
-  Composer,
 } from "@/components/ui";
 import { PhonePreview, DeviceIdentity } from "@/components/inspector";
+import { AgentRail, AddAgentModal, isActiveAgent, type Agent, type AgentRole } from "@/components/agents";
+import { GroupComposer } from "@/components/group-composer";
+import { HandoffCard } from "@/components/handoff-card";
+import { OnboardingModal } from "@/components/onboarding";
 
 // Octagon - local-first console for an iPhone fleet.
-// Everything shown here comes from /api/farm/* and the local SQLite file.
+// One conversation, many agents, many phones: the feed is a group chat where
+// agents are first-class participants. Everything shown here comes from
+// /api/farm/*, /api/agents and the local SQLite file.
 // No demo data, no simulated screens: if the farm has nothing, this says so.
 
 type Device = {
@@ -72,7 +76,15 @@ type EventRow = {
 
 type HubRow = { active: number; locked: number; ts: string };
 
-type ChatMsg = { ts: string; text: string; side: "left" | "right"; level: string };
+// Event data is a JSON string: user events carry {side:"user"}, agent replies
+// {side:"agent", agentId, agentName}, handoffs {kind:"handoff", ...}.
+type ChatMsg = {
+  ts: string;
+  text: string;
+  side: "left" | "right";
+  level: string;
+  data: Record<string, unknown> | null;
+};
 
 type SettingsData = {
   status: string;
@@ -122,6 +134,7 @@ function artworkFor(id: string): string {
 }
 
 const SESSION_PRESETS = [5, 10, 15, 30, 60];
+const AGENT_ROLES: AgentRole[] = ["supervisor", "phone", "monitor", "custom"];
 
 // Relative for anything younger than 24h ("4m ago"), clock-and-date after that.
 function fmtTime(iso: string | null | undefined): string {
@@ -164,6 +177,22 @@ function parseDuration(payload: string): number | null {
   } catch {
     return null;
   }
+}
+
+// Event data arrives as a JSON string; anything unparsable renders as null and
+// the feed falls back to the plain event text.
+function parseEventData(raw: string): Record<string, unknown> | null {
+  if (!raw) return null;
+  try {
+    const v = JSON.parse(raw);
+    return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+function dataStr(v: unknown): string | null {
+  return typeof v === "string" && v ? v : null;
 }
 
 // Farm health states ("session", "idle", ...) mapped onto the StatusChip states.
@@ -280,11 +309,17 @@ export default function OctagonChat() {
   const [health, setHealth] = useState<Health[]>([]);
   const [hub, setHub] = useState<HubRow | null>(null);
   const [farmLoaded, setFarmLoaded] = useState(false);
-  const [farmError, setFarmError] = useState<null | "auth" | "error">(null);
+  const [farmError, setFarmError] = useState<null | "error">(null);
   const [farmErrorMsg, setFarmErrorMsg] = useState("");
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksError, setTasksError] = useState(false);
+
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [agentsLoaded, setAgentsLoaded] = useState(false);
+  const [agentsError, setAgentsError] = useState(false);
+  const [addressedAgentId, setAddressedAgentId] = useState<string | null>(null);
+  const [agentModalOpen, setAgentModalOpen] = useState(false);
 
   const [messages, setMessages] = useState<Record<string, ChatMsg[]>>({});
   const [msgError, setMsgError] = useState(false);
@@ -294,6 +329,8 @@ export default function OctagonChat() {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   const [modal, setModal] = useState<null | "details" | "add" | "settings" | "session">(null);
   const [settings, setSettings] = useState<SettingsData | null>(null);
@@ -335,10 +372,30 @@ export default function OctagonChat() {
       ? "running"
       : "down";
 
+  // The supervisor is the default addressee of the conversation; any other
+  // agent can be addressed with "@Name" in the composer.
+  const supervisor = agents.find((a) => a.role === "supervisor");
+  const otherAgents = agents.filter((a) => a.id !== supervisor?.id);
+  const composerPlaceholder = device
+    ? supervisor
+      ? otherAgents.length > 0
+        ? `Message ${supervisor.name} - try @${otherAgents[0].name} status`
+        : `Message ${supervisor.name} - try "run 20", "status", or "stop"`
+      : `Message ${device.voice_prefix} - try "run 20", "status", or "stop"`
+    : "Add a device first";
+
+  const agentColorFor = (agentId: string | null, agentName: string | null): string => {
+    const a = agents.find(
+      (x) => (agentId ? x.id === agentId : false) || (agentName ? x.name === agentName : false),
+    );
+    return a?.color || avatarColor(agentName || agentId || "agent");
+  };
+
   const loadFarm = useCallback(async () => {
     try {
       const res = await fetch("/api/farm", { cache: "no-store" });
-      const j = await res.json().catch(() => null); else if (!j?.success) {
+      const j = await res.json().catch(() => null);
+      if (!j?.success) {
         setFarmError("error");
         setFarmErrorMsg(String(j?.error || `HTTP ${res.status}`));
       } else {
@@ -358,9 +415,7 @@ export default function OctagonChat() {
     try {
       const res = await fetch("/api/farm/tasks", { cache: "no-store" });
       const j = await res.json().catch(() => null);
-      if (res.redirected) {
-        setTasksError(true);
-      } else if (res.ok && j?.success) {
+      if (res.ok && j?.success) {
         setTasks(Array.isArray(j.tasks) ? j.tasks : []);
         setTasksError(false);
       } else {
@@ -371,30 +426,63 @@ export default function OctagonChat() {
     }
   }, []);
 
+  const loadAgents = useCallback(async () => {
+    try {
+      const res = await fetch("/api/agents", { cache: "no-store" });
+      const j = await res.json().catch(() => null);
+      if (res.ok && j?.success) {
+        const rows: unknown[] = Array.isArray(j.agents) ? j.agents : [];
+        const list: Agent[] = rows.map((raw, i) => {
+          const a = (raw ?? {}) as Record<string, unknown>;
+          const id = dataStr(a.id) ?? `agent-${i}`;
+          const role = (AGENT_ROLES as string[]).includes(String(a.role))
+            ? (a.role as AgentRole)
+            : "custom";
+          return {
+            id,
+            name: dataStr(a.name) ?? "Agent",
+            role,
+            device_id: a.device_id == null ? null : String(a.device_id),
+            color: typeof a.color === "string" && a.color ? a.color : avatarColor(id),
+            status: a.status == null ? "" : String(a.status),
+            active: (a.active as Agent["active"]) ?? true,
+          };
+        });
+        setAgents(list.filter((a) => isActiveAgent(a.active)));
+        setAgentsError(false);
+      } else {
+        setAgentsError(true);
+      }
+    } catch {
+      setAgentsError(true);
+    }
+    setAgentsLoaded(true);
+  }, []);
+
   const loadEvents = useCallback(async (deviceId: string) => {
     try {
       const res = await fetch(
         `/api/farm/events?phoneId=${encodeURIComponent(deviceId)}&limit=50`,
         { cache: "no-store" },
       );
-      const j = await res.json().catch(() => null); else if (res.ok && j?.success) {
+      const j = await res.json().catch(() => null);
+      if (res.ok && j?.success) {
         const rows: EventRow[] = Array.isArray(j.events) ? j.events : [];
         setMessages((prev) => ({
           ...prev,
           [deviceId]: rows
             .slice()
             .reverse()
-            .map((e) => ({
-              ts: e.ts,
-              text: String(e.event ?? ""),
-              // data is JSON.stringify({side:"user"}) - compact, so ignore whitespace.
-              side: String(e.data ?? "")
-                .replace(/\s/g, "")
-                .includes('"side":"user"')
-                ? "right"
-                : "left",
-              level: String(e.level ?? "info"),
-            })),
+            .map((e) => {
+              const data = parseEventData(String(e.data ?? ""));
+              return {
+                ts: e.ts,
+                text: String(e.event ?? ""),
+                side: dataStr(data?.side) === "user" ? "right" : "left",
+                level: String(e.level ?? "info"),
+                data,
+              };
+            }),
         }));
         setMsgError(false);
       } else {
@@ -408,7 +496,20 @@ export default function OctagonChat() {
   useEffect(() => {
     loadFarm();
     loadTasks();
-  }, [loadFarm, loadTasks]);
+    loadAgents();
+  }, [loadFarm, loadTasks, loadAgents]);
+
+  // First run: show onboarding once, until any choice stores the flag. If
+  // localStorage is unavailable, do not nag - skip silently.
+  useEffect(() => {
+    let seen = true;
+    try {
+      seen = Boolean(window.localStorage.getItem("octagon-onboarded"));
+    } catch {
+      seen = true;
+    }
+    if (!seen) setOnboardingOpen(true);
+  }, []);
 
   useEffect(() => {
     if (device && device.id !== sel) setSel(device.id);
@@ -422,10 +523,11 @@ export default function OctagonChat() {
     const t = setInterval(() => {
       loadFarm();
       loadTasks();
+      loadAgents();
       if (selRef.current) loadEvents(selRef.current);
     }, 10000);
     return () => clearInterval(t);
-  }, [loadFarm, loadTasks, loadEvents]);
+  }, [loadFarm, loadTasks, loadAgents, loadEvents]);
 
   // Jump to the bottom when switching devices; afterwards only follow new
   // events while the reader is already near the bottom.
@@ -466,6 +568,26 @@ export default function OctagonChat() {
     return () => window.removeEventListener("keydown", onKey);
   }, [menuOpen]);
 
+  function selectAgent(id: string) {
+    // Clicking the addressed agent again returns addressing to the supervisor.
+    setAddressedAgentId((cur) => (cur === id ? null : id));
+  }
+
+  function finishOnboarding(result: "demo" | "dismiss") {
+    try {
+      window.localStorage.setItem("octagon-onboarded", "1");
+    } catch {
+      // Without localStorage the overlay would re-show every mount; still close.
+    }
+    setOnboardingOpen(false);
+    if (result === "demo") {
+      loadFarm();
+      loadTasks();
+      loadAgents();
+      if (selRef.current) loadEvents(selRef.current);
+    }
+  }
+
   async function send(text: string) {
     const body = text.trim();
     if (!body || sending || !device) return;
@@ -482,8 +604,6 @@ export default function OctagonChat() {
         await loadEvents(device.id);
         loadFarm();
         loadTasks();
-      } else if (res.status === 401 || res.redirected) {
-        setSendError("Sign in required to send messages.");
       } else {
         setSendError(`Could not send: ${j?.error || `HTTP ${res.status}`}`);
       }
@@ -513,8 +633,6 @@ export default function OctagonChat() {
         setSel(j.device?.id ?? null);
         setModal(null);
         setAddPrefix("");
-      } else if (res.status === 401 || res.redirected) {
-        setAddError("Sign in required to add devices.");
       } else {
         setAddError(String(j?.error || `Could not add the device (HTTP ${res.status}).`));
       }
@@ -548,8 +666,7 @@ export default function OctagonChat() {
         setModal(null);
         setSessionMinutes("");
         loadTasks();
-      } else if (res.status === 401 || res.redirected) {
-        setSessionError("Sign in required to schedule sessions."); else {
+      } else {
         setSessionError(String(j?.error || `Could not schedule the session (HTTP ${res.status}).`));
       }
     } catch {
@@ -613,15 +730,6 @@ export default function OctagonChat() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 space-y-[2px]">
-          {farmError === "auth" && (
-            <div className="px-3 py-4 text-[12.5px] text-ink-dim leading-relaxed">
-              Sign in required.
-              <br />
-              <Link href="/login" className="text-ink underline underline-offset-2">
-                Go to login
-              </Link>
-            </div>
-          )}
           {farmError === "error" && (
             <div className="px-3 py-4 text-[12.5px] text-ink-dim leading-relaxed">
               Could not load devices.
@@ -678,6 +786,18 @@ export default function OctagonChat() {
           {farmLoaded && !farmError && devices.length > 0 && filtered.length === 0 && (
             <div className="px-3 py-4 text-[12.5px] text-ink-mute">No device matches.</div>
           )}
+
+          {/* Agents: first-class participants of this conversation. */}
+          <AgentRail
+            agents={agents}
+            loaded={agentsLoaded}
+            error={agentsError}
+            devices={devices}
+            selectedAgentId={addressedAgentId}
+            onSelect={selectAgent}
+            onAdd={() => setAgentModalOpen(true)}
+            onChanged={loadAgents}
+          />
         </div>
 
         <div className="px-3 pb-3 pt-1">
@@ -798,6 +918,9 @@ export default function OctagonChat() {
             )}
             {msgs.map((m, i) => {
               const showDay = i === 0 || dayKey(m.ts) !== dayKey(msgs[i - 1].ts);
+              const kind = dataStr(m.data?.kind);
+              const agentName = dataStr(m.data?.agentName);
+              const agentId = dataStr(m.data?.agentId);
               return (
                 <div key={m.ts + ":" + i} className="mb-4">
                   {showDay && (
@@ -807,13 +930,31 @@ export default function OctagonChat() {
                       </span>
                     </div>
                   )}
-                  <EventMessage
-                    icon={eventIcon(m)}
-                    text={m.text}
-                    ts={fmtTime(m.ts)}
-                    side={m.side === "right" ? "user" : "agent"}
-                    iconTone={m.level === "error" ? "error" : "default"}
-                  />
+                  {kind === "handoff" ? (
+                    <HandoffCard text={m.text} data={m.data} />
+                  ) : (
+                    <>
+                      {m.side === "left" && agentName && (
+                        <div className="mb-1 flex items-center gap-1.5 pl-1">
+                          <span
+                            className="h-2 w-2 rounded-full shrink-0"
+                            style={{ backgroundColor: agentColorFor(agentId, agentName) }}
+                            aria-hidden="true"
+                          />
+                          <span className="text-[11.5px] font-medium text-ink-dim">
+                            {agentName}
+                          </span>
+                        </div>
+                      )}
+                      <EventMessage
+                        icon={eventIcon(m)}
+                        text={m.text}
+                        ts={fmtTime(m.ts)}
+                        side={m.side === "right" ? "user" : "agent"}
+                        iconTone={m.level === "error" ? "error" : "default"}
+                      />
+                    </>
+                  )}
                 </div>
               );
             })}
@@ -826,14 +967,11 @@ export default function OctagonChat() {
                 {sendError}
               </p>
             )}
-            <Composer
-              placeholder={
-                device
-                  ? `Message ${device.voice_prefix} - try "run 20", "status", or "stop"`
-                  : "Add a device first"
-              }
+            <GroupComposer
+              placeholder={composerPlaceholder}
               onSend={send}
               disabled={!device}
+              agents={agents}
             />
           </div>
         </main>
@@ -964,6 +1102,22 @@ export default function OctagonChat() {
           )}
         </aside>
       </div>
+
+      {/* Onboarding (first run only) */}
+      {onboardingOpen && <OnboardingModal onFinish={finishOnboarding} />}
+
+      {/* Add agent modal */}
+      {agentModalOpen && (
+        <AddAgentModal
+          devices={devices}
+          onClose={() => setAgentModalOpen(false)}
+          onCreated={(agent) => {
+            setAgentModalOpen(false);
+            setAddressedAgentId(String(agent.id));
+            loadAgents();
+          }}
+        />
+      )}
 
       {/* Device details modal */}
       {modal === "details" && device && (
