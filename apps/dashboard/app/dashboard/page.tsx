@@ -30,6 +30,7 @@ import {
   StatusChip,
   TitleBar,
 } from "@/components/ui";
+import { UpdateBanner } from "@/components/update-banner";
 import { DeviceIdentity, PhonePreview } from "@/components/inspector";
 import { isActiveAgent } from "@/components/agents";
 import type { FarmDevice, FarmDeviceHealth } from "@/lib/farmTypes";
@@ -751,6 +752,7 @@ export default function FleetDashboard() {
         onViewChange={(v) => router.push(v === "fleet" ? "/dashboard" : "/")}
         onOpenSettings={openSettings}
       />
+      <UpdateBanner />
 
       <div className="flex min-h-0 flex-1">
         {/* ------------------------- left device rail ------------------------- */}

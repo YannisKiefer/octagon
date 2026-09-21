@@ -12,6 +12,8 @@ const path = require('path');
 const fs = require('fs');
 const net = require('net');
 const http = require('http');
+const https = require('https');
+const os = require('os');
 
 const DEV_URL = process.env.NEXT_DEV_URL || ''; // e.g. http://localhost:3010
 const IS_DEV = !!DEV_URL;
@@ -188,9 +190,123 @@ function startHub() {
 // window
 // ---------------------------------------------------------------------------
 
-function sendToPage(channel) {
+function sendToPage(channel, payload) {
   const wc = mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null;
-  if (wc) wc.send(channel);
+  if (wc) wc.send(channel, payload);
+}
+
+
+// ---------------------------------------------------------------------------
+// updater - unsigned builds cannot use electron-updater (macOS requires signed
+// apps for Squirrel.Mac), so this checks GitHub releases and swaps the app
+// bundle in place: download DMG -> attach -> copy Octagon.app over the
+// installed copy -> relaunch. No quarantine attribute is created by this path,
+// so updated installs never see the Gatekeeper dialog again.
+// ---------------------------------------------------------------------------
+const UPDATE_FEED = process.env.OCTAGON_UPDATE_FEED
+  || 'https://api.github.com/repos/YannisKiefer/octagon/releases/latest';
+
+function parseVersion(v) {
+  return String(v || '').replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0);
+}
+function isNewer(latest, current) {
+  const a = parseVersion(latest); const b = parseVersion(current);
+  for (let i = 0; i < 3; i++) { if ((a[i] || 0) > (b[i] || 0)) return true; if ((a[i] || 0) < (b[i] || 0)) return false; }
+  return false;
+}
+function fetchJson(url) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { headers: { 'User-Agent': 'octagon-desktop', Accept: 'application/vnd.github+json' } }, (res) => {
+      if (res.statusCode !== 200) { res.resume(); return reject(new Error('HTTP ' + res.statusCode)); }
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (c) => { body += c; });
+      res.on('end', () => { try { resolve(JSON.parse(body)); } catch (e) { reject(e); } });
+    });
+    req.on('error', reject);
+    req.setTimeout(15000, () => { req.destroy(new Error('timeout')); });
+  });
+}
+async function checkForUpdate() {
+  const feed = await fetchJson(UPDATE_FEED);
+  const latest = String(feed.tag_name || '').replace(/^v/, '');
+  if (!latest || !isNewer(latest, app.getVersion())) return { available: false, current: app.getVersion() };
+  const dmg = (feed.assets || []).find((a) => /arm64\.dmg$/.test(a.name));
+  return {
+    available: true, current: app.getVersion(), version: latest,
+    url: dmg ? dmg.browser_download_url : null,
+    htmlUrl: feed.html_url || null,
+  };
+}
+function downloadFile(url, dest, onProgress) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { headers: { 'User-Agent': 'octagon-desktop' } }, (res) => {
+      if (res.statusCode !== 200) { res.resume(); return reject(new Error('HTTP ' + res.statusCode)); }
+      const total = parseInt(res.headers['content-length'], 10) || 0;
+      let done = 0;
+      const out = fs.createWriteStream(dest);
+      res.on('data', (chunk) => {
+        done += chunk.length;
+        if (total && onProgress) onProgress(Math.min(100, Math.round((done / total) * 100)));
+      });
+      res.pipe(out);
+      out.on('finish', () => out.close(() => resolve(dest)));
+      out.on('error', reject);
+    });
+    req.on('error', reject);
+    req.setTimeout(0, () => {}); // large file; no idle timeout
+  });
+}
+function run(cmd, args) {
+  return new Promise((resolve) => {
+    const p = spawn(cmd, args);
+    let stdout = '';
+    p.stdout.on('data', (c) => { stdout += c; });
+    p.on('close', (code) => resolve({ code, stdout }));
+    p.on('error', (e) => resolve({ code: 1, stdout: '', error: e.message }));
+  });
+}
+let updateInstalling = false;
+async function installUpdate(onProgress) {
+  if (updateInstalling) return { ok: false, error: 'An update is already in progress.' };
+  updateInstalling = true;
+  try {
+    const check = await checkForUpdate();
+    if (!check.available || !check.url) return { ok: false, error: 'No update available.' };
+    const dmgPath = path.join(os.tmpdir(), 'Octagon-' + check.version + '.dmg');
+    onProgress({ phase: 'download', pct: 0 });
+    await downloadFile(check.url, dmgPath, (pct) => onProgress({ phase: 'download', pct }));
+    onProgress({ phase: 'install', pct: 100 });
+    const mountpoint = path.join(os.tmpdir(), 'octagon-update-mount');
+    const attach = await run('/usr/bin/hdiutil', ['attach', '-nobrowse', '-readonly', '-mountpoint', mountpoint, dmgPath]);
+    if (attach.code !== 0) return { ok: false, error: 'Could not open the downloaded update.' };
+    try {
+      const src = path.join(mountpoint, 'Octagon.app');
+      if (!fs.existsSync(src)) return { ok: false, error: 'The downloaded update is missing Octagon.app.' };
+      const exe = app.getPath('exe'); // .../Octagon.app/Contents/MacOS/Octagon
+      const installedRoot = path.resolve(exe, '..', '..', '..');
+      if (installedRoot.startsWith('/Applications')) {
+        fs.rmSync('/Applications/Octagon.app', { recursive: true, force: true });
+        fs.cpSync(src, '/Applications/Octagon.app', { recursive: true });
+        onProgress({ phase: 'relaunch', pct: 100 });
+        app.relaunch();
+        setTimeout(() => app.exit(0), 300);
+        return { ok: true, relaunching: true };
+      }
+      // Not installed in /Applications (e.g. running from the DMG): hand the
+      // mounted volume to the user for the normal drag.
+      shell.openPath(mountpoint);
+      return { ok: true, relaunching: false, note: 'Drag Octagon to Applications to finish the update.' };
+    } finally {
+      run('/usr/bin/hdiutil', ['detach', mountpoint, '-force']).then(() => {
+        try { fs.unlinkSync(dmgPath); } catch {}
+      });
+    }
+  } catch (e) {
+    return { ok: false, error: e.message };
+  } finally {
+    updateInstalling = false;
+  }
 }
 
 function createWindow(url) {
@@ -281,6 +397,22 @@ function buildMenu() {
       label: 'Octagon',
       submenu: [
         { role: 'about', label: 'About Octagon' },
+        { type: 'separator' },
+        {
+          label: 'Check for Updates…',
+          click: () => {
+            checkForUpdate()
+              .then((r) => {
+                if (r.available) {
+                  sendToPage('update:available', r);
+                  dialog.showMessageBox({ type: 'info', message: 'Update ' + r.version + ' is available.', detail: 'Use the Update banner in the app to install it.', buttons: ['OK'] });
+                } else {
+                  dialog.showMessageBox({ type: 'info', message: "You're up to date.", detail: 'Octagon ' + app.getVersion() + ' is the latest version.', buttons: ['OK'] });
+                }
+              })
+              .catch(() => dialog.showMessageBox({ type: 'warning', message: 'Could not check for updates.', detail: 'GitHub was unreachable. Try again later.', buttons: ['OK'] }));
+          },
+        },
         { type: 'separator' },
         {
           label: 'Settings…',
@@ -393,6 +525,22 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(async () => {
     buildMenu();
+
+    const { ipcMain } = require('electron');
+    ipcMain.handle('update:check', () => checkForUpdate());
+    ipcMain.handle('update:install', async () => {
+      const send = (payload) => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update:progress', payload); };
+      return installUpdate(send);
+    });
+    // one quiet check shortly after launch; the renderer shows a banner if a
+    // newer version exists
+    if (!SMOKE) {
+      setTimeout(() => {
+        checkForUpdate()
+          .then((r) => { if (r.available && mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update:available', r); })
+          .catch(() => {});
+      }, 15000);
+    }
 
     // Dock icon: the packed icns covers packaged builds, but dev/unpacked
     // launches otherwise show the generic Electron icon.

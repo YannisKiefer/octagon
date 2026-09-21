@@ -22,6 +22,7 @@ import {
   DeviceAvatar,
   EventMessage,
 } from "@/components/ui";
+import { UpdateBanner } from "@/components/update-banner";
 import { PhonePreview, DeviceIdentity } from "@/components/inspector";
 import { AgentRail, AddAgentModal, isActiveAgent, type Agent, type AgentRole } from "@/components/agents";
 import { GroupComposer } from "@/components/group-composer";
@@ -830,6 +831,7 @@ export default function OctagonChat() {
         onViewChange={(v) => router.push(v === "fleet" ? "/dashboard" : "/")}
         onOpenSettings={openSettings}
       />
+      <UpdateBanner />
 
       <div className="flex flex-1 min-h-0">
         {/* Device rail */}
