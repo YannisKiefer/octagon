@@ -338,10 +338,7 @@ export default function FleetDashboard() {
     try {
       const res = await fetch("/api/farm", { cache: "no-store", signal: ctrl.signal });
       const j = await res.json().catch(() => null);
-      if (ctrl.signal.aborted) return;
-      if (res.status === 401 || res.redirected) {
-        setFarmError("auth");
-      } else if (!j?.success) {
+      if (ctrl.signal.aborted) return; else if (!j?.success) {
         setFarmError("error");
         setFarmErrorMsg(String(j?.error || `HTTP ${res.status}`));
       } else {
@@ -368,10 +365,7 @@ export default function FleetDashboard() {
         signal: ctrl.signal,
       });
       const j = await res.json().catch(() => null);
-      if (ctrl.signal.aborted) return;
-      if (res.status === 401 || res.redirected) {
-        setSummaryError("auth");
-      } else if (res.ok && j?.success) {
+      if (ctrl.signal.aborted) return; else if (res.ok && j?.success) {
         setSummary({
           ...j,
           queue: Array.isArray(j.queue) ? j.queue : [],
@@ -610,10 +604,7 @@ export default function FleetDashboard() {
         loadSummary(rangeRef.current);
         loadFarm();
       } else if (res.status === 401 || res.redirected) {
-        setSessionError("Sign in required to schedule sessions.");
-      } else if (res.status === 403) {
-        setSessionError("Scheduling sessions requires the admin role.");
-      } else {
+        setSessionError("Sign in required to schedule sessions."); else {
         setSessionError(String(j?.error || `Could not schedule the session (HTTP ${res.status}).`));
       }
     } catch {
@@ -668,10 +659,7 @@ export default function FleetDashboard() {
         loadSummary(rangeRef.current);
         loadFarm();
       } else if (res.status === 401 || res.redirected) {
-        setCancelError("Sign in required to cancel tasks.");
-      } else if (res.status === 403) {
-        setCancelError("Canceling tasks requires the admin role.");
-      } else {
+        setCancelError("Sign in required to cancel tasks."); else {
         setCancelError(String(j?.error || `Could not cancel the task (HTTP ${res.status}).`));
       }
     } catch {

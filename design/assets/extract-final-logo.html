@@ -1,0 +1,44 @@
+<!doctype html><html><body><script>
+const img = new Image();
+img.onload = () => {
+  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+  const x = c.getContext('2d', {willReadFrequently:true});
+  x.drawImage(img, 0, 0);
+  const d = x.getImageData(0,0,c.width,c.height);
+  const p = d.data, W = c.width;
+  let minX=1e9,maxX=-1,minY=1e9,maxY=-1;
+  for (let i=0;i<p.length;i+=4){
+    const lum = 0.2126*p[i]+0.7152*p[i+1]+0.0722*p[i+2];
+    p[i+3] = Math.min(255, Math.round(lum*1.15));
+    const px=(i/4)%W, py=Math.floor((i/4)/W);
+    if (p[i+3]>10){ if(px<minX)minX=px; if(px>maxX)maxX=px; if(py<minY)minY=py; if(py>maxY)maxY=py; }
+  }
+  x.putImageData(d,0,0);
+  const w=maxX-minX+1, h=maxY-minY+1;
+  function crop(color){
+    const c2=document.createElement('canvas'); c2.width=w; c2.height=h;
+    const x2=c2.getContext('2d'); const d2=x2.createImageData(w,h);
+    for (let y=0;y<h;y++) for (let xi=0;xi<w;xi++){
+      const si=((y+minY)*W+(xi+minX))*4, di=(y*w+xi)*4;
+      d2.data[di]=color[0]; d2.data[di+1]=color[1]; d2.data[di+2]=color[2]; d2.data[di+3]=p[si+3];
+    }
+    x2.putImageData(d2,0,0); return c2.toDataURL('image/png');
+  }
+  function cropMark(color){
+    const s=h;
+    const c2=document.createElement('canvas'); c2.width=s; c2.height=s;
+    const x2=c2.getContext('2d'); const d2=x2.createImageData(s,s);
+    for (let y=0;y<s;y++) for (let xi=0;xi<s;xi++){
+      const si=((y+minY)*W+(xi+minX))*4, di=(y*s+xi)*4;
+      d2.data[di]=color[0]; d2.data[di+1]=color[1]; d2.data[di+2]=color[2]; d2.data[di+3]=p[si+3];
+    }
+    x2.putImageData(d2,0,0); return c2.toDataURL('image/png');
+  }
+  window.__out = {
+    lockupWhite: crop([255,255,255]), markWhite: cropMark([255,255,255]),
+    markDark: cropMark([16,21,27]), w: w, h: h
+  };
+  window.dispatchEvent(new Event('ready'));
+};
+img.src = 'brand/logo-final-lockup.png';
+</script></body></html>

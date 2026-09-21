@@ -338,10 +338,7 @@ export default function OctagonChat() {
   const loadFarm = useCallback(async () => {
     try {
       const res = await fetch("/api/farm", { cache: "no-store" });
-      const j = await res.json().catch(() => null);
-      if (res.status === 401 || res.redirected) {
-        setFarmError("auth");
-      } else if (!j?.success) {
+      const j = await res.json().catch(() => null); else if (!j?.success) {
         setFarmError("error");
         setFarmErrorMsg(String(j?.error || `HTTP ${res.status}`));
       } else {
@@ -380,10 +377,7 @@ export default function OctagonChat() {
         `/api/farm/events?phoneId=${encodeURIComponent(deviceId)}&limit=50`,
         { cache: "no-store" },
       );
-      const j = await res.json().catch(() => null);
-      if (res.status === 401 || res.redirected) {
-        setMsgError(true);
-      } else if (res.ok && j?.success) {
+      const j = await res.json().catch(() => null); else if (res.ok && j?.success) {
         const rows: EventRow[] = Array.isArray(j.events) ? j.events : [];
         setMessages((prev) => ({
           ...prev,
@@ -555,10 +549,7 @@ export default function OctagonChat() {
         setSessionMinutes("");
         loadTasks();
       } else if (res.status === 401 || res.redirected) {
-        setSessionError("Sign in required to schedule sessions.");
-      } else if (res.status === 403) {
-        setSessionError("Scheduling sessions requires the admin role.");
-      } else {
+        setSessionError("Sign in required to schedule sessions."); else {
         setSessionError(String(j?.error || `Could not schedule the session (HTTP ${res.status}).`));
       }
     } catch {
