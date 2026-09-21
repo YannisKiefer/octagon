@@ -94,7 +94,7 @@
       line.setAttribute('y1', (cy + inner * Math.sin(angle)).toFixed(2));
       line.setAttribute('x2', (cx + outer * Math.cos(angle)).toFixed(2));
       line.setAttribute('y2', (cy + outer * Math.sin(angle)).toFixed(2));
-      line.setAttribute('stroke', 'rgba(255,188,210,.34)');
+      line.setAttribute('stroke', 'rgba(188,216,240,.34)');
       line.setAttribute('stroke-width', i % 5 === 0 ? '1.5' : '1');
       ticks.appendChild(line);
     }
