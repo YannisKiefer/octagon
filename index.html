@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Octagon - your iPhone fleet, on your Mac</title>
+  <meta name="description" content="Octagon is a local-first, open-source console that turns iPhones you own into a scriptable fleet, driven by iOS Voice Control. Runs on your Mac. No cloud, no unofficial APIs, no jailbreak.">
+  <link rel="canonical" href="https://yanniskiefer.github.io/octagon/">
+  <meta name="theme-color" content="#ececeb">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Octagon">
+  <meta property="og:title" content="Octagon - your iPhone fleet, on your Mac">
+  <meta property="og:description" content="A local-first, open-source console that turns iPhones you own into a scriptable fleet, driven by iOS Voice Control. No cloud, no unofficial APIs, no jailbreak.">
+  <meta property="og:url" content="https://yanniskiefer.github.io/octagon/">
+  <meta property="og:image" content="https://yanniskiefer.github.io/octagon/assets/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Octagon - your iPhone fleet, on your Mac">
+  <meta name="twitter:description" content="A local-first, open-source console that turns iPhones you own into a scriptable fleet, driven by iOS Voice Control. No cloud, no unofficial APIs, no jailbreak.">
+  <meta name="twitter:image" content="https://yanniskiefer.github.io/octagon/assets/og.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <script>
+    document.documentElement.classList.add("entrance-active");
+    window.__entranceFailsafe = setTimeout(function () {
+      document.documentElement.classList.remove("entrance-active");
+    }, 3200);
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="pill-nav">
+    <a class="pill-brand" href="./">
+      <img src="assets/mark-glyph-black.png" alt="" width="22" height="22">
+      <span>Octagon</span>
+    </a>
+    <nav class="pill-links" aria-label="Site">
+      <a href="#how-it-works">How it works</a>
+      <a href="#demo">Demo</a>
+      <a href="#download">Download</a>
+      <a href="#mcp">MCP</a>
+    </nav>
+    <a class="pill-github" href="https://github.com/YannisKiefer/octagon">GitHub</a>
+  </header>
+
+  <main id="main">
+
+    <!-- ============ Hero stage ============ -->
+    <section class="stage" aria-label="Octagon introduction">
+      <div class="paper-texture" aria-hidden="true">
+        <svg width="100%" height="100%" focusable="false">
+          <rect width="100%" height="100%" filter="url(#paperNoise)"></rect>
+          <rect width="100%" height="100%" fill="url(#paperFiber)"></rect>
+        </svg>
+      </div>
+
+      <svg class="filter-defs" width="0" height="0" focusable="false" aria-hidden="true">
+        <defs>
+          <filter id="cardNoise" x="0" y="0" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency=".54" numOctaves="3" seed="27" stitchTiles="stitch"/>
+            <feColorMatrix type="saturate" values="0"/>
+            <feComponentTransfer>
+              <feFuncR type="linear" slope="1.8" intercept="-.25"/>
+              <feFuncG type="linear" slope="1.8" intercept="-.25"/>
+              <feFuncB type="linear" slope="1.8" intercept="-.25"/>
+              <feFuncA type="table" tableValues="0 .52"/>
+            </feComponentTransfer>
+          </filter>
+          <filter id="panelNoiseF" x="0" y="0" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency=".6" numOctaves="2" seed="13" stitchTiles="stitch"/>
+            <feColorMatrix type="saturate" values="0"/>
+            <feComponentTransfer>
+              <feFuncA type="table" tableValues="0 .55"/>
+            </feComponentTransfer>
+          </filter>
+          <filter id="paperNoise" x="0" y="0" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="8" stitchTiles="stitch"/>
+            <feColorMatrix type="saturate" values="0"/>
+            <feComponentTransfer>
+              <feFuncA type="table" tableValues="0 .05"/>
+            </feComponentTransfer>
+          </filter>
+          <pattern id="paperFiber" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(17)">
+            <line x1="0" y1="0" x2="0" y2="7" stroke="#222222" stroke-opacity=".028" stroke-width="1"/>
+          </pattern>
+        </defs>
+      </svg>
+
+      <div class="masthead">
+        <h1 class="headline">
+          <span class="headline__line headline__line--1">Built for <span class="dot-word" data-dots="Intelligent" role="img" aria-label="Intelligent"></span></span>
+          <span class="headline__line headline__line--2">iPhone fleets</span>
+        </h1>
+        <p class="intro">Octagon turns the iPhones in your drawer into a scriptable fleet.<br class="desktop-break"> One Mac drives them over iOS Voice Control - no cloud, no unofficial APIs -<br class="desktop-break"> with an MCP server so Claude can queue sessions and read events.</p>
+      </div>
+
+      <section class="cards" aria-label="What Octagon gives you">
+
+        <!-- Card 1: MCP tools -->
+        <article class="card card--speed">
+          <h2 class="card__title">MCP Tools<br>Claude Desktop + Code</h2>
+          <svg class="gauge" viewBox="0 0 326 326" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="gaugeArc" gradientUnits="userSpaceOnUse" x1="7" y1="136" x2="312" y2="109">
+                <stop offset="0" stop-color="#ff9ab7" stop-opacity=".06"/>
+                <stop offset=".08" stop-color="#ff8caf" stop-opacity=".44"/>
+                <stop offset=".34" stop-color="#ff6796" stop-opacity=".94"/>
+                <stop offset=".58" stop-color="#ff6796"/>
+                <stop offset=".82" stop-color="#ffe7ed" stop-opacity=".74"/>
+                <stop offset=".94" stop-color="#fff8fa" stop-opacity=".28"/>
+                <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+              </linearGradient>
+              <linearGradient id="gaugeShadow" gradientUnits="userSpaceOnUse" x1="11" y1="136" x2="308" y2="110">
+                <stop offset="0" stop-color="#6e1639" stop-opacity=".04"/>
+                <stop offset=".09" stop-color="#6e1639" stop-opacity=".17"/>
+                <stop offset=".52" stop-color="#72163d" stop-opacity=".18"/>
+                <stop offset=".78" stop-color="#7b1a43" stop-opacity=".1"/>
+                <stop offset="1" stop-color="#7b1a43" stop-opacity="0"/>
+              </linearGradient>
+              <radialGradient id="radarBeam" gradientUnits="userSpaceOnUse" cx="163" cy="163" r="145">
+                <stop offset=".3" stop-color="#650f35" stop-opacity="0"/>
+                <stop offset=".45" stop-color="#650f35" stop-opacity=".025"/>
+                <stop offset=".7" stop-color="#650f35" stop-opacity=".065"/>
+                <stop offset=".9" stop-color="#650f35" stop-opacity=".08"/>
+                <stop offset="1" stop-color="#650f35" stop-opacity=".05"/>
+              </radialGradient>
+              <linearGradient id="radarBeamEdge" gradientUnits="userSpaceOnUse" x1="238" y1="33" x2="190.5" y2="115.4">
+                <stop offset="0" stop-color="#ffe7ef" stop-opacity=".19"/>
+                <stop offset=".48" stop-color="#ffd1df" stop-opacity=".11"/>
+                <stop offset=".82" stop-color="#ffc6d7" stop-opacity=".045"/>
+                <stop offset="1" stop-color="#ffc6d7" stop-opacity="0"/>
+              </linearGradient>
+              <filter id="radarSoft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.35"/></filter>
+              <filter id="radarHalo" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5.2"/></filter>
+              <filter id="gaugeBlur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="11"/></filter>
+            </defs>
+            <path d="M11.34 136.26A154 154 0 0 1 307.71 110.33" fill="none" stroke="url(#gaugeShadow)" stroke-width="3.2" stroke-linecap="round"/>
+            <path d="M6.91 135.48A158.5 158.5 0 0 1 311.94 108.79" fill="none" stroke="url(#gaugeArc)" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M19.22 137.65A146 146 0 0 1 236 36.56" fill="none" stroke="rgba(255,166,194,.31)" stroke-width="1.15"/>
+            <path d="M238 33.1A150 150 0 0 1 277.9 66.6L199.8 119.5A55 55 0 0 0 190.5 115.4Z" fill="#6a1238" opacity=".022" filter="url(#radarHalo)"/>
+            <path d="M238 33.1A150 150 0 0 1 277.9 66.6L199.8 119.5A55 55 0 0 0 190.5 115.4Z" fill="url(#radarBeam)" filter="url(#radarSoft)"/>
+            <path d="M238 33.1L190.5 115.4" stroke="url(#radarBeamEdge)" stroke-width="1.25" stroke-linecap="round" filter="url(#radarSoft)"/>
+            <g id="gaugeTicks"></g>
+            <ellipse cx="225" cy="166" rx="92" ry="76" fill="#ffffff" opacity=".055" filter="url(#gaugeBlur)"/>
+          </svg>
+          <div class="metric metric--speed">
+            <span class="dot-number" data-dots="5"></span><span class="metric__unit">tools</span>
+          </div>
+          <p class="caption">stdio server<br>fully local</p>
+          <a class="learn-more" href="#mcp">See the tools</a>
+          <svg class="card__grain" viewBox="0 0 429 554" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect width="429" height="554" filter="url(#cardNoise)"/></svg>
+        </article>
+
+        <!-- Card 2: Zero cloud -->
+        <article class="card card--context">
+          <h2 class="card__title">Zero Cloud<br>Everything Local</h2>
+          <div class="context-glow" aria-hidden="true"></div>
+          <svg class="context-backdrop" viewBox="0 0 429 554" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="tTLf" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#d4b0ee" stop-opacity=".05"/>
+                <stop offset="1" stop-color="#c6bbff" stop-opacity=".18"/>
+              </linearGradient>
+              <linearGradient id="tTCf" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#d5c2ff" stop-opacity=".22"/>
+                <stop offset=".38" stop-color="#e0bdff" stop-opacity=".26"/>
+                <stop offset=".7" stop-color="#f2a0ee" stop-opacity=".32"/>
+                <stop offset="1" stop-color="#ff96da" stop-opacity=".34"/>
+              </linearGradient>
+              <linearGradient id="tTRf" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#ffe8da" stop-opacity=".56"/>
+                <stop offset=".55" stop-color="#f9c6d0" stop-opacity=".26"/>
+                <stop offset="1" stop-color="#eba4bf" stop-opacity=".08"/>
+              </linearGradient>
+              <linearGradient id="tMLf" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#cfc0f2" stop-opacity=".3"/>
+                <stop offset="1" stop-color="#d9a8d8" stop-opacity=".38"/>
+              </linearGradient>
+              <linearGradient id="tMCf" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#e3b4e8" stop-opacity=".34"/>
+                <stop offset="1" stop-color="#f09ac2" stop-opacity=".4"/>
+              </linearGradient>
+              <linearGradient id="tMRf" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#e858b8" stop-opacity=".52"/>
+                <stop offset=".55" stop-color="#e6459c" stop-opacity=".46"/>
+                <stop offset="1" stop-color="#de74ba" stop-opacity=".16"/>
+              </linearGradient>
+              <linearGradient id="deepX" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#5f1f3d"/>
+                <stop offset=".36" stop-color="#c2495a"/>
+                <stop offset=".68" stop-color="#ef7fae"/>
+                <stop offset="1" stop-color="#8f7fd8"/>
+              </linearGradient>
+              <linearGradient id="sheenTop" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#ffffff" stop-opacity=".28"/>
+                <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+              </linearGradient>
+              <linearGradient id="tTCshadeG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#67407f" stop-opacity="0"/>
+                <stop offset="1" stop-color="#67407f" stop-opacity=".38"/>
+              </linearGradient>
+              <linearGradient id="deepFade" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#ffffff"/>
+                <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+              </linearGradient>
+              <linearGradient id="wallFade" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#ffffff"/>
+                <stop offset=".82" stop-color="#ffffff"/>
+                <stop offset="1" stop-color="#ffffff" stop-opacity=".65"/>
+              </linearGradient>
+              <filter id="tileSoft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3.4"/></filter>
+              <filter id="groutSoft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="6.5"/></filter>
+              <filter id="wallNoiseF" x="0" y="0" width="100%" height="100%">
+                <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="71" stitchTiles="stitch"/>
+                <feColorMatrix type="saturate" values="0"/>
+                <feComponentTransfer><feFuncA type="table" tableValues="0 .6"/></feComponentTransfer>
+              </filter>
+              <filter id="deepNoiseF" x="0" y="0" width="100%" height="100%">
+                <feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="57" stitchTiles="stitch"/>
+                <feColorMatrix type="saturate" values="0"/>
+                <feComponentTransfer><feFuncA type="table" tableValues="0 .55"/></feComponentTransfer>
+              </filter>
+              <filter id="wallNoiseF2" x="0" y="0" width="100%" height="100%">
+                <feTurbulence type="fractalNoise" baseFrequency="1" numOctaves="2" seed="29" stitchTiles="stitch"/>
+                <feColorMatrix type="saturate" values="0"/>
+                <feComponentTransfer><feFuncA type="table" tableValues="0 .5"/></feComponentTransfer>
+              </filter>
+              <mask id="wallM"><rect x="0" y="0" width="429" height="554" fill="url(#wallFade)"/></mask>
+              <mask id="tileRowsM">
+                <rect x="-24" y="22" width="480" height="330" fill="#ffffff"/>
+              </mask>
+              <mask id="noiseM">
+                <rect x="-24" y="22" width="480" height="330" fill="#ffffff"/>
+              </mask>
+              <mask id="tTCshadeM"><rect x="88" y="22" width="247" height="150" fill="#ffffff"/></mask>
+              <mask id="tB3m">
+                <rect x="-24" y="300" width="480" height="60" fill="#ffffff" opacity=".5"/>
+              </mask>
+              <mask id="deepM"><rect x="0" y="384" width="429" height="170" fill="url(#deepFade)"/></mask>
+            </defs>
+            <g filter="url(#tileSoft)" mask="url(#wallM)">
+              <rect x="-24" y="22" width="106" height="149" rx="15" fill="url(#tTLf)"/>
+              <rect x="88" y="22" width="247" height="150" rx="15" fill="url(#tTCf)"/>
+              <rect x="346" y="22" width="111" height="147" rx="15" fill="url(#tTRf)"/>
+              <rect x="-24" y="177" width="108" height="174" rx="15" fill="url(#tMLf)"/>
+              <rect x="88" y="177" width="247" height="174" rx="15" fill="url(#tMCf)"/>
+              <rect x="344" y="175" width="113" height="176" rx="15" fill="url(#tMRf)"/>
+            </g>
+            <g mask="url(#tileRowsM)" filter="url(#tileSoft)" opacity=".85">
+              <rect x="88" y="22" width="247" height="46" rx="15" fill="url(#sheenTop)"/>
+              <rect x="346" y="22" width="111" height="46" rx="15" fill="url(#sheenTop)"/>
+              <rect x="-24" y="177" width="108" height="52" rx="15" fill="url(#sheenTop)"/>
+            </g>
+            <rect x="88" y="118" width="247" height="54" fill="url(#tTCshadeG)" mask="url(#tTCshadeM)" opacity=".5"/>
+            <g filter="url(#groutSoft)" opacity=".5">
+              <rect x="81" y="30" width="8" height="150" fill="#6d2f66" opacity=".55"/>
+              <rect x="338" y="30" width="8" height="322" fill="#74305e" opacity=".5"/>
+              <rect x="0" y="167" width="429" height="12" fill="#6d2a58" opacity=".55"/>
+              <ellipse cx="220" cy="171" rx="60" ry="10" fill="#8a2f72" opacity=".35"/>
+              <ellipse cx="120" cy="352" rx="70" ry="10" fill="#7c2c5c" opacity=".3"/>
+            </g>
+            <g filter="url(#tileSoft)">
+              <ellipse cx="352" cy="86" rx="70" ry="54" fill="#ffd7ec" opacity=".18"/>
+              <ellipse cx="75" cy="150" rx="41" ry="27" fill="#eef0ff" opacity=".25"/>
+              <ellipse cx="8" cy="334" rx="38" ry="29" fill="#5e2450" opacity=".3"/>
+              <ellipse cx="56" cy="215" rx="28" ry="31" fill="#b79bff" opacity=".22"/>
+              <rect x="-24" y="300" width="480" height="60" fill="#a4549b" opacity=".2" mask="url(#tB3m)"/>
+            </g>
+            <rect x="-24" y="384" width="480" height="170" fill="url(#deepX)" mask="url(#deepM)"/>
+            <rect x="-24" y="22" width="480" height="330" filter="url(#wallNoiseF)" opacity=".34" style="mix-blend-mode:soft-light" mask="url(#noiseM)"/>
+            <rect x="-24" y="400" width="480" height="154" filter="url(#deepNoiseF)" opacity=".22" style="mix-blend-mode:soft-light" mask="url(#deepM)"/>
+            <rect x="-24" y="177" width="108" height="174" filter="url(#wallNoiseF2)" opacity=".3" style="mix-blend-mode:soft-light"/>
+            <rect x="344" y="175" width="113" height="176" filter="url(#wallNoiseF2)" opacity=".3" style="mix-blend-mode:soft-light"/>
+          </svg>
+          <div class="context-window" aria-hidden="true">
+            <svg class="window-grain" viewBox="0 0 252 166" preserveAspectRatio="none" focusable="false"><rect width="252" height="166" filter="url(#panelNoiseF)"/></svg>
+            <div class="window-lines"><span></span><span></span><span></span></div>
+          </div>
+          <div class="metric metric--context">
+            <span class="dot-number" data-dots="1"></span><span class="metric__unit">file</span>
+          </div>
+          <p class="caption">SQLite database<br>on your Mac</p>
+          <a class="learn-more" href="#how-it-works">How it works</a>
+          <svg class="card__grain" viewBox="0 0 429 554" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect width="429" height="554" filter="url(#cardNoise)"/></svg>
+        </article>
+
+        <!-- Card 3: Voice Control -->
+        <article class="card card--connections">
+          <h2 class="card__title">Voice Control<br>Real Device Actions</h2>
+          <svg class="connections-map" viewBox="0 0 429 238" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="connFade" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#ffffff"/>
+                <stop offset=".5" stop-color="#ffffff"/>
+                <stop offset=".67" stop-color="#ffffff" stop-opacity=".46"/>
+                <stop offset=".83" stop-color="#ffffff" stop-opacity=".15"/>
+                <stop offset=".96" stop-color="#ffffff" stop-opacity="0"/>
+              </linearGradient>
+              <mask id="connM"><rect x="0" y="0" width="429" height="238" fill="url(#connFade)"/></mask>
+            </defs>
+            <g mask="url(#connM)">
+              <g fill="none" stroke="#ffffff" stroke-width="1">
+                <path opacity=".20" d="M0 5H128c27 0 36 7 39 26 2 16 9 22 24 22h106c16 0 23-8 25-25 2-16 10-23 31-23h76"/>
+                <path opacity=".30" d="M0 117h46c15 0 22 8 26 25 5 23 12 31 31 31h174c18 0 25-8 30-31 4-17 11-25 26-25h96"/>
+                <path opacity=".34" d="M0 173h87c15 0 22 7 27 25 4 15 11 22 28 22h140c17 0 25-7 29-22 5-18 12-25 28-25h90"/>
+                <path opacity=".16" d="M0 228h120c17 0 25-5 28-18 4-15 10-20 28-20h81c18 0 25 6 28 20 4 13 11 18 28 18h116"/>
+                <path opacity=".26" d="M0 5H429M0 61H429M0 117H429"/>
+                <path opacity=".09" d="M0 173H429"/>
+              </g>
+              <g fill="none" stroke="#fff8dd" stroke-width="1.15">
+                <path opacity=".52" d="M0 61h95c14 0 22-6 27-20 4-13 12-20 27-20h115c15 0 23 6 27 20 5 14 13 20 28 20h110"/>
+                <path opacity=".94" d="M0 117h88c15 0 22-8 25-25 4-24 12-31 31-31h129c20 0 27 7 31 31 3 17 10 25 26 25h99"/>
+              </g>
+              <g>
+                <circle cx="45" cy="117" r="6.5" fill="#ffffff"/>
+                <circle cx="133" cy="61" r="6.5" fill="#fff4a7"/>
+                <circle cx="189" cy="61" r="6.5" fill="#fff1a4"/>
+                <circle cx="319" cy="61" r="6.5" fill="#fff4a6"/>
+                <circle cx="319" cy="117" r="6.5" fill="#fff2a0"/>
+              </g>
+            </g>
+          </svg>
+          <div class="metric metric--connections">
+            <span class="dot-number" data-dots="0"></span><span class="metric__unit">APIs</span>
+          </div>
+          <p class="caption">No unofficial APIs<br>no jailbreak</p>
+          <a class="learn-more" href="#quick-start">Get started</a>
+          <svg class="card__grain" viewBox="0 0 429 554" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect width="429" height="554" filter="url(#cardNoise)"/></svg>
+        </article>
+
+      </section>
+    </section>
+
+    <!-- ============ How it works ============ -->
+    <section class="section section-alt" id="how-it-works" aria-labelledby="how-title">
+      <div class="wrap">
+        <p class="eyebrow">How it works</p>
+        <h2 id="how-title">Real cues, spoken aloud</h2>
+        <p class="section-lede">A hub on your Mac keeps one brain per phone. Each brain speaks its phone's cue through the Mac's voice, with variable, non-metronomic pacing between cues. The phone's custom Voice Control command does the rest. All of it is local: the dashboard, the hub, and one SQLite file.</p>
+
+        <figure class="diagram glass-card" role="group" aria-labelledby="diagram-caption">
+          <svg class="diagram-svg diagram-desktop" viewBox="0 0 960 640" role="img" aria-labelledby="dg-title-d dg-desc-d">
+            <title id="dg-title-d">Octagon architecture</title>
+            <desc id="dg-desc-d">On your Mac, a dashboard and a hub with one brain per phone write to a local SQLite file. The hub speaks cues to iPhones over Voice Control. An MCP client reaches the same farm over a local stdio server.</desc>
+            <rect class="dg-container" x="24" y="24" width="560" height="544" rx="14"/>
+            <text class="dg-container-label" x="40" y="52">Your Mac</text>
+            <rect class="dg-box" x="48" y="72" width="512" height="64" rx="10"/>
+            <text class="dg-title" x="68" y="99">Dashboard</text>
+            <text class="dg-sub" x="68" y="120">localhost:3010, chat for the fleet</text>
+            <line class="dg-line" x1="304" y1="136" x2="304" y2="162" marker-end="url(#arrow)"/>
+            <text class="dg-sub" x="318" y="154">queue</text>
+            <rect class="dg-box" x="48" y="168" width="512" height="88" rx="10"/>
+            <text class="dg-title" x="68" y="198">Hub - infra/farm/hub.js</text>
+            <text class="dg-sub" x="68" y="220">one brain per phone, self-healing restarts,</text>
+            <text class="dg-sub" x="68" y="238">global audio lock: one cue at a time</text>
+            <line class="dg-line" x1="304" y1="256" x2="128" y2="284" marker-end="url(#arrow)"/>
+            <line class="dg-line" x1="304" y1="256" x2="304" y2="284" marker-end="url(#arrow)"/>
+            <line class="dg-line" x1="304" y1="256" x2="480" y2="284" marker-end="url(#arrow)"/>
+            <rect class="dg-box" x="48" y="288" width="152" height="56" rx="10"/>
+            <text class="dg-title" x="64" y="312">Brain Alpha</text>
+            <text class="dg-sub" x="64" y="332">speaks its cue</text>
+            <rect class="dg-box" x="216" y="288" width="152" height="56" rx="10"/>
+            <text class="dg-title" x="232" y="312">Brain Bravo</text>
+            <text class="dg-sub" x="232" y="332">speaks its cue</text>
+            <rect class="dg-box" x="384" y="288" width="152" height="56" rx="10"/>
+            <text class="dg-title" x="400" y="312">Brain Charlie</text>
+            <text class="dg-sub" x="400" y="332">speaks its cue</text>
+            <rect class="dg-box dg-db" x="48" y="400" width="512" height="72" rx="10"/>
+            <text class="dg-title" x="68" y="430">SQLite - infra/db/farm.db</text>
+            <text class="dg-sub" x="68" y="452">every event and health record, one file</text>
+            <polyline class="dg-dash" points="560,104 572,104 572,436 560,436"/>
+            <line class="dg-dash" x1="548" y1="256" x2="548" y2="400"/>
+            <polyline class="dg-cue" points="560,212 624,212 624,128" />
+            <line class="dg-cue" x1="624" y1="212" x2="624" y2="432"/>
+            <line class="dg-cue" x1="624" y1="128" x2="682" y2="128" marker-end="url(#arrowcue)"/>
+            <line class="dg-cue" x1="624" y1="280" x2="682" y2="280" marker-end="url(#arrowcue)"/>
+            <line class="dg-cue" x1="624" y1="432" x2="682" y2="432" marker-end="url(#arrowcue)"/>
+            <text class="dg-sub" x="636" y="106" text-anchor="middle">spoken cue</text>
+            <rect class="dg-box" x="688" y="72" width="248" height="112" rx="10"/>
+            <text class="dg-title" x="708" y="102">iPhone - Alpha</text>
+            <text class="dg-sub" x="708" y="124">Voice Control custom command</text>
+            <text class="dg-mono" x="708" y="148">"Alpha Swipe Next"</text>
+            <rect class="dg-box" x="688" y="224" width="248" height="112" rx="10"/>
+            <text class="dg-title" x="708" y="254">iPhone - Bravo</text>
+            <text class="dg-sub" x="708" y="276">Voice Control custom command</text>
+            <text class="dg-mono" x="708" y="300">"Bravo Swipe Next"</text>
+            <rect class="dg-box" x="688" y="376" width="248" height="112" rx="10"/>
+            <text class="dg-title" x="708" y="406">iPhone - Charlie</text>
+            <text class="dg-sub" x="708" y="428">Voice Control custom command</text>
+            <text class="dg-mono" x="708" y="452">"Charlie Swipe Next"</text>
+            <text class="dg-sub" x="636" y="508" text-anchor="middle">say, one at a time</text>
+            <rect class="dg-box dg-mcp" x="688" y="524" width="248" height="76" rx="10"/>
+            <text class="dg-title" x="708" y="552">Claude Desktop / MCP client</text>
+            <text class="dg-sub" x="708" y="574">mcp/server.js, local stdio</text>
+            <line class="dg-dash" x1="688" y1="562" x2="590" y2="562" marker-end="url(#arrow)"/>
+            <text class="dg-sub" x="639" y="550" text-anchor="middle">same five tools</text>
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#222222"/>
+              </marker>
+              <marker id="arrowcue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#ad314d"/>
+              </marker>
+            </defs>
+          </svg>
+
+          <svg class="diagram-svg diagram-mobile" viewBox="0 0 480 860" role="img" aria-labelledby="dg-title-m dg-desc-m">
+            <title id="dg-title-m">Octagon architecture</title>
+            <desc id="dg-desc-m">On your Mac, a dashboard and a hub with one brain per phone write to a local SQLite file. The hub speaks cues to iPhones over Voice Control. An MCP client reaches the same farm over a local stdio server.</desc>
+            <rect class="dg-container" x="16" y="16" width="448" height="380" rx="14"/>
+            <text class="dg-container-label" x="32" y="42">Your Mac</text>
+            <rect class="dg-box" x="32" y="56" width="416" height="56" rx="10"/>
+            <text class="dg-title" x="48" y="80">Dashboard</text>
+            <text class="dg-sub" x="48" y="100">localhost:3010</text>
+            <line class="dg-line" x1="240" y1="112" x2="240" y2="136" marker-end="url(#arrowm)"/>
+            <rect class="dg-box" x="32" y="140" width="416" height="76" rx="10"/>
+            <text class="dg-title" x="48" y="168">Hub - infra/farm/hub.js</text>
+            <text class="dg-sub" x="48" y="190">one brain per phone, self-healing restarts,</text>
+            <text class="dg-sub" x="48" y="206">global audio lock: one cue at a time</text>
+            <line class="dg-line" x1="240" y1="216" x2="96" y2="242" marker-end="url(#arrowm)"/>
+            <line class="dg-line" x1="240" y1="216" x2="240" y2="242" marker-end="url(#arrowm)"/>
+            <line class="dg-line" x1="240" y1="216" x2="384" y2="242" marker-end="url(#arrowm)"/>
+            <rect class="dg-box" x="32" y="246" width="128" height="48" rx="10"/>
+            <text class="dg-title" x="46" y="268">Brain Alpha</text>
+            <rect class="dg-box" x="176" y="246" width="128" height="48" rx="10"/>
+            <text class="dg-title" x="190" y="268">Brain Bravo</text>
+            <rect class="dg-box" x="320" y="246" width="128" height="48" rx="10"/>
+            <text class="dg-title" x="334" y="268">Brain Charlie</text>
+            <rect class="dg-box dg-db" x="32" y="318" width="416" height="56" rx="10"/>
+            <text class="dg-title" x="48" y="342">SQLite - infra/db/farm.db</text>
+            <text class="dg-sub" x="48" y="362">every event and health record</text>
+            <line class="dg-cue" x1="240" y1="396" x2="240" y2="408"/>
+            <text class="dg-mono" x="240" y="426" text-anchor="middle">say "Alpha Swipe Next"</text>
+            <text class="dg-sub" x="240" y="444" text-anchor="middle">one at a time, global audio lock</text>
+            <line class="dg-cue" x1="240" y1="452" x2="240" y2="468" marker-end="url(#arrowcue2)"/>
+            <rect class="dg-box" x="64" y="470" width="352" height="88" rx="10"/>
+            <text class="dg-title" x="84" y="500">iPhone - Alpha</text>
+            <text class="dg-sub" x="84" y="522">Voice Control custom command:</text>
+            <text class="dg-mono" x="84" y="542">"Alpha Swipe Next"</text>
+            <rect class="dg-box" x="64" y="574" width="352" height="88" rx="10"/>
+            <text class="dg-title" x="84" y="604">iPhone - Bravo</text>
+            <text class="dg-sub" x="84" y="626">Voice Control custom command:</text>
+            <text class="dg-mono" x="84" y="646">"Bravo Swipe Next"</text>
+            <rect class="dg-box" x="64" y="678" width="352" height="88" rx="10"/>
+            <text class="dg-title" x="84" y="708">iPhone - Charlie</text>
+            <text class="dg-sub" x="84" y="730">Voice Control custom command:</text>
+            <text class="dg-mono" x="84" y="750">"Charlie Swipe Next"</text>
+            <line class="dg-dash" x1="240" y1="766" x2="240" y2="786" marker-end="url(#arrowm)"/>
+            <rect class="dg-box dg-mcp" x="64" y="790" width="352" height="56" rx="10"/>
+            <text class="dg-title" x="84" y="814">Claude Desktop / any MCP client</text>
+            <text class="dg-sub" x="84" y="834">mcp/server.js, local stdio, same five tools</text>
+            <defs>
+              <marker id="arrowm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#222222"/>
+              </marker>
+              <marker id="arrowcue2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#ad314d"/>
+              </marker>
+            </defs>
+          </svg>
+          <figcaption id="diagram-caption">The hub keeps one brain per phone. Each brain speaks its phone's cue; the phone's Voice Control command does the rest. Everything is written to one SQLite file on your Mac.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ Demo ============ -->
+    <section class="section" id="demo" aria-labelledby="demo-title">
+      <div class="wrap">
+        <p class="eyebrow">Demo</p>
+        <h2 id="demo-title">See it before you wire a single phone</h2>
+        <p class="section-lede">The screenshots below were taken with synthetic demo data seeded by the repository. No real devices, accounts or activity are shown.</p>
+
+        <div class="demo-shots">
+          <figure class="shot">
+            <div class="shot-frame glass-card" data-shot>
+              <span class="shot-label">Dashboard screenshot - synthetic demo data</span>
+              <img src="assets/screenshots/dashboard-main.png" alt="Octagon dashboard with the device fleet chat, running on synthetic demo data" width="1448" height="1086" loading="lazy" data-fallback>
+            </div>
+            <figcaption>The fleet chat: phones, sessions and health in one place. Synthetic demo data.</figcaption>
+          </figure>
+          <figure class="shot demo-secondary">
+            <div class="shot-frame glass-card" data-shot>
+              <span class="shot-label">Dashboard screenshot - synthetic demo data</span>
+              <img src="assets/screenshots/dashboard-chat.png" alt="A single phone conversation in the Octagon dashboard, showing events and session reports on synthetic demo data" width="1448" height="1086" loading="lazy" data-fallback>
+            </div>
+            <figcaption>One phone, one conversation: what it did and when. Synthetic demo data.</figcaption>
+          </figure>
+        </div>
+
+        <aside class="callout glass-card" aria-label="Try Octagon without an iPhone">
+          <h3>Try it without an iPhone</h3>
+          <p>Dry-run mode works with zero phones. The hub starts its brains, follows the same pacing logic, and stays silent.</p>
+          <div class="code">
+            <pre><code>node infra/farm/hub.js --slots=2 --duration=5 --test</code></pre>
+            <button type="button" class="copy-btn" aria-label="Copy command to clipboard">Copy</button>
+          </div>
+          <p class="callout-note">Add demo data for the dashboard with <code>node scripts/seed-demo.js</code>. Everything the seeder writes is fake.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ Quick start ============ -->
+    <section class="section section-alt" id="quick-start" aria-labelledby="qs-title">
+      <div class="wrap">
+        <div class="narrow">
+        <p class="eyebrow">Quick start</p>
+        <h2 id="qs-title">Clone to dashboard</h2>
+        <p class="section-lede">You need a Mac and Node 20 or newer. Clone, configure, install the two workspaces:</p>
+
+        <div class="code">
+          <pre><code>git clone https://github.com/YannisKiefer/octagon.git
+cd octagon
+cp .env.example .env
+npm install --prefix infra/farm
+npm install --prefix apps/dashboard</code></pre>
+          <button type="button" class="copy-btn" aria-label="Copy install commands to clipboard">Copy</button>
+        </div>
+
+        <p class="section-lede">Optional: seed synthetic demo data, then start the dashboard:</p>
+        <div class="code">
+          <pre><code>node scripts/seed-demo.js
+npm run dev --prefix apps/dashboard</code></pre>
+          <button type="button" class="copy-btn" aria-label="Copy seed and run commands to clipboard">Copy</button>
+        </div>
+
+        <p class="section-lede">Open <code>http://localhost:3010</code>. In development the dashboard opens without a login. A production build (<code>npm run build &amp;&amp; npm start</code>) enforces authentication from <code>.env</code>: set <code>DASHBOARD_ADMIN_USER</code> and <code>DASHBOARD_ADMIN_PASSWORD</code>, and give <code>NEXTAUTH_SECRET</code> a real value:</p>
+
+        <div class="code">
+          <pre><code>node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"</code></pre>
+          <button type="button" class="copy-btn" aria-label="Copy secret generation command to clipboard">Copy</button>
+        </div>
+
+        <p class="section-lede">Your data lives in one file, <code>infra/db/farm.db</code>, next to the checkout. Delete it and everything is gone. To connect real iPhones, follow the <a href="https://github.com/YannisKiefer/octagon/blob/main/infra/farm/SETUP-GUIDE.md">setup guide</a>: enable Voice Control on each phone, create its custom command, plug in over USB.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Download ============ -->
+    <section class="section" id="download" aria-labelledby="dl-title">
+      <div class="wrap">
+        <p class="eyebrow">Download</p>
+        <h2 id="dl-title">Octagon for Mac</h2>
+        <p class="section-lede">Native app for Apple Silicon. Download the DMG, drag Octagon to Applications, and go. The dashboard, the hub, and the MCP server are all inside - no terminal required.</p>
+        <p class="section-cta"><a class="btn btn-primary" href="https://github.com/YannisKiefer/octagon/releases/latest/download/Octagon-1.1.0-arm64.dmg">Download Octagon-1.1.0-arm64.dmg</a>
+        <a class="btn btn-ghost" href="https://github.com/YannisKiefer/octagon/releases">All releases</a></p>
+        <p class="fineprint">Unsigned build (no paid Apple certificate): the first launch needs one extra step. Open the DMG, drag Octagon to Applications, double-click it once, then allow it under System Settings - Privacy and Security - Open Anyway. After that it opens normally. Requires macOS on Apple Silicon. Prefer building it yourself? The source is the release archive.</p>
+      </div>
+    </section>
+
+    <!-- ============ MCP ============ -->
+    <section class="section section-alt" id="mcp" aria-labelledby="mcp-title">
+      <div class="wrap">
+        <p class="eyebrow">MCP</p>
+        <h2 id="mcp-title">Five tools, one local server</h2>
+        <p class="stat" aria-label="5 tools"><span class="dot-number" data-dots="5" aria-hidden="true"></span><span class="stat-unit">tools over stdio</span></p>
+        <p class="section-lede">Octagon ships a local MCP server over stdio. There is no network listener and no auth by design; read access is limited to the local SQLite file. Point Claude Desktop, Claude Code or any MCP client at it:</p>
+
+        <div class="mcp-grid">
+          <div class="mcp-tools glass-card">
+            <h3>The tools</h3>
+            <dl class="tool-list">
+              <dt><code>list_phones</code></dt>
+              <dd>List phones registered in the local farm, with health.</dd>
+              <dt><code>get_phone</code></dt>
+              <dd>One phone with its health record.</dd>
+              <dt><code>run_session</code></dt>
+              <dd>Queue a pacing session for a phone (slot, minutes). It executes while the hub is running.</dd>
+              <dt><code>get_events</code></dt>
+              <dd>Recent events for a phone, newest first.</dd>
+              <dt><code>get_phone_screen</code></dt>
+              <dd>Capture the screen via <code>idevicescreenshot</code>, or get an explicit "unavailable" answer. Never a placeholder image.</dd>
+            </dl>
+          </div>
+          <div class="mcp-config glass-card">
+            <h3>The config</h3>
+            <div class="code">
+              <pre><code>{
+  "mcpServers": {
+    "octagon": {
+      "command": "node",
+      "args": ["/absolute/path/to/octagon/mcp/server.js"]
+    }
+  }
+}</code></pre>
+              <button type="button" class="copy-btn" aria-label="Copy MCP config to clipboard">Copy</button>
+            </div>
+            <p class="mcp-note">In Claude Desktop this goes in <code>claude_desktop_config.json</code>. In Claude Code you can run: <code>claude mcp add octagon -- node /absolute/path/to/octagon/mcp/server.js</code></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Requirements and limits ============ -->
+    <section class="section" id="limits" aria-labelledby="limits-title">
+      <div class="wrap">
+        <p class="eyebrow">Requirements and limits</p>
+        <h2 id="limits-title">What you need, and what to expect</h2>
+        <p class="stat" aria-label="0 unofficial APIs"><span class="dot-number" data-dots="0" aria-hidden="true"></span><span class="stat-unit">unofficial APIs, ever</span></p>
+        <div class="limits-grid">
+          <div class="limit-col glass-card">
+            <h3>You need</h3>
+            <ul>
+              <li>A Mac. Octagon uses the built-in <code>say</code> command for cues.</li>
+              <li>Node 20 or newer.</li>
+              <li>iPhones you own, with Voice Control enabled and set to English.</li>
+              <li>Optional: <a href="https://libimobiledevice.org">libimobiledevice</a> for screen capture and reading UDIDs.</li>
+            </ul>
+          </div>
+          <div class="limit-col glass-card">
+            <h3>Know before you start</h3>
+            <ul>
+              <li>Screen capture needs libimobiledevice and a configured UDID. Without them, the MCP tool answers "unavailable" instead of guessing.</li>
+              <li>One phone is cued at a time. A global audio lock serializes the spoken cues.</li>
+              <li>Voice Control cues are English. Your iPhone Voice Control language should be set accordingly.</li>
+              <li>Sessions execute while the hub is up. It is a local process, not a service.</li>
+              <li>Posting content is on the roadmap, not implemented. No auto likes, comments, follows or DMs. No proxy support.</li>
+            </ul>
+          </div>
+        </div>
+
+        <aside class="risk glass-card" aria-label="A note on responsibility">
+          <h3>A note on responsibility</h3>
+          <p>Automating social apps can violate the platforms' terms of service. Use devices and accounts you own, and decide for yourself what you automate. Octagon does not promise any outcome regarding account enforcement.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ Privacy ============ -->
+    <section class="section section-alt" id="privacy" aria-labelledby="privacy-title">
+      <div class="wrap">
+        <div class="narrow">
+        <p class="eyebrow">Privacy</p>
+        <h2 id="privacy-title">One file. Your machine.</h2>
+        <p class="stat" aria-label="1 file"><span class="dot-number" data-dots="1" aria-hidden="true"></span><span class="stat-unit">SQLite file, nothing else</span></p>
+        <p class="section-lede">All state lives in a single local SQLite file: <code>infra/db/farm.db</code>. Devices, health, tasks, events. Nothing leaves the machine: no telemetry, no accounts, no cloud storage. The MCP server is local stdio only. Delete the file, and everything is gone.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-col footer-brand">
+        <a class="footer-brand-row" href="./">
+          <img class="footer-mark" src="assets/mark-glyph-white.png" alt="Octagon logo" width="237" height="237">
+          <span>Octagon</span>
+        </a>
+        <p>A local-first console for iPhones you own, driven by iOS Voice Control. Free, open source, MIT licensed.</p>
+      </div>
+      <nav class="footer-col" aria-label="Documentation">
+        <h3>Docs</h3>
+        <ul>
+          <li><a href="https://github.com/YannisKiefer/octagon/blob/main/README.md">README</a></li>
+          <li><a href="https://github.com/YannisKiefer/octagon/blob/main/infra/farm/SETUP-GUIDE.md">Setup guide</a></li>
+          <li><a href="https://github.com/YannisKiefer/octagon/blob/main/SECURITY.md">Security</a></li>
+          <li><a href="https://github.com/YannisKiefer/octagon/blob/main/CONTRIBUTING.md">Contributing</a></li>
+        </ul>
+      </nav>
+      <nav class="footer-col" aria-label="Project">
+        <h3>Project</h3>
+        <ul>
+          <li><a href="https://github.com/YannisKiefer/octagon">GitHub repository</a></li>
+          <li><a href="https://github.com/YannisKiefer/octagon/issues">Issues</a></li>
+          <li><a href="https://github.com/YannisKiefer/octagon/blob/main/LICENSE">MIT license</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bottom">
+      <p class="risk-small">Automating social apps can violate the platforms' terms of service. Use devices and accounts you own, and decide for yourself what you automate.</p>
+      <p><a href="https://github.com/YannisKiefer/octagon">Octagon on GitHub</a> - MIT license</p>
+    </div>
+  </footer>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>
