@@ -433,10 +433,14 @@ section[id] { scroll-margin-top: 84px; }
 }
 
 .dot-number { display: block; }
-.dot-number .dot-svg { width: 100%; height: auto; }
+.dot-number .dot-svg { width: auto; height: 100%; }
 
+/* The spec sizes metric dot-numbers by width for its multi-digit
+   metrics ("118" -> 31.2% wide). Octagon's metrics are single digits,
+   so they are sized by the equivalent optical block height instead
+   (what each spec width yields for its reference string). */
 .metric--speed { top: 48.6%; }
-.metric--speed .dot-number { width: 31.2%; }
+.metric--speed .dot-number { height: calc(53.5 * var(--u)); }
 .metric--speed .dot-svg {
   transform: translate(calc(4 * var(--u)), calc(2 * var(--u))) scale(.925, 1.018);
   transform-origin: left top;
@@ -448,14 +452,14 @@ section[id] { scroll-margin-top: 84px; }
 }
 
 .metric--context { top: 48.0%; transform: translateX(2.1cqw); }
-.metric--context .dot-number { width: 30.5%; }
+.metric--context .dot-number { height: calc(61 * var(--u)); }
 .metric--context .dot-svg {
   transform: translate(calc(-1 * var(--u)), calc(-.5 * var(--u))) scale(.96, 1.02);
   transform-origin: center;
 }
 
 .metric--connections { top: 48.5%; transform: translateX(2.1cqw); }
-.metric--connections .dot-number { width: 23%; }
+.metric--connections .dot-number { height: calc(69 * var(--u)); }
 
 .metric__unit {
   font-weight: 400;
@@ -812,7 +816,7 @@ code {
   margin: 4px 0 18px;
   color: var(--accent);
 }
-.stat .dot-number { height: 2.1em; }
+.stat .dot-number { height: 2.6em; }
 .stat .dot-svg { height: 100%; width: auto; }
 .stat-unit {
   color: var(--ink);
@@ -1110,12 +1114,17 @@ figcaption {
   gap: 40px;
 }
 
-.footer-lockup {
-  display: block;
-  height: 30px;
-  width: auto;
-  margin-bottom: 16px;
+.footer-brand-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #ececeb;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.15rem;
+  letter-spacing: -.01em;
 }
+.footer-mark { width: 30px; height: 30px; display: block; }
 
 .footer-brand p {
   color: rgba(236, 236, 235, .72);
