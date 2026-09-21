@@ -12,9 +12,15 @@
 
 [Quick start](#quick-start) · [How it works](#how-it-works) · [Agents](#your-farm-is-staffed) · [MCP](#mcp) · [FAQ](#faq)
 
+<img src="assets/screenshots/dashboard-chat.png" alt="Octagon — talk to your agents" width="100%"/>
+
+<sub>You talk to agents. Agents run the phones. (Synthetic demo data.)</sub>
+
+<br/>
+
 <img src="assets/screenshots/dashboard-main.png" alt="Octagon — the fleet dashboard" width="100%"/>
 
-<sub>Synthetic demo data. Your numbers will be real.</sub>
+<sub>The fleet dashboard. Every metric from one local SQLite file.</sub>
 
 </div>
 
