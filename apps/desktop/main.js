@@ -149,7 +149,8 @@ function startChild(name, { file, missing, args, env = {}, tag = name, onUp }) {
 
 function startNextServer(port) {
   serverPort = port;
-  return startChild(`next server (port ${port})`, {
+  return startChild('next', {
+    tag: `next server (port ${port})`,
     file: SERVER_JS,
     missing: `bundled server missing: ${SERVER_JS} - run npm run build:app first`,
     args: [SERVER_JS],
@@ -523,9 +524,9 @@ if (!app.requestSingleInstanceLock()) {
       }, 15000);
     }
 
-    // Dock icon: the packed icns covers packaged builds, but dev/unpacked
+    // Dock icon: packaged builds get it from the bundled icns; dev/unpacked
     // launches otherwise show the generic Electron icon.
-    if (process.platform === "darwin" && app.dock) {
+    if (process.platform === "darwin" && app.dock && !app.isPackaged) {
       try { app.dock.setIcon(path.join(__dirname, "build", "icon.png")); }
       catch (e) { log(`dock icon: ${e.message}`); }
     }
