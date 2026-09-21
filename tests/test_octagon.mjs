@@ -124,6 +124,18 @@ const nextNumber =
 ok(nextNumber === 5, "next device id skips existing phone4 instead of colliding");
 db2.close();
 
+// 10. Agents: the farm seeds a standing crew on first run - supervisor Nova,
+// monitor Sentry, and one phone agent per device (2 + N) behind /api/agents.
+const farmDbSrc = fs.readFileSync(path.join(ROOT, "apps", "dashboard", "lib", "farmDb.ts"), "utf8");
+ok(
+  fs.existsSync(path.join(ROOT, "apps", "dashboard", "app", "api", "agents", "route.ts")) &&
+  farmDbSrc.includes("CREATE TABLE IF NOT EXISTS farm_agents") &&
+  farmDbSrc.includes('"Nova"') &&
+  farmDbSrc.includes('"Sentry"') &&
+  farmDbSrc.includes("Agent`"),
+  "/api/agents seeds 2 + N default agents (Nova, Sentry, one per device)"
+);
+
 for (const f of [tmpDb, db2path, tmpDb + "-wal", tmpDb + "-shm", db2path + "-wal", db2path + "-shm"]) {
   try { fs.unlinkSync(f); } catch {}
 }

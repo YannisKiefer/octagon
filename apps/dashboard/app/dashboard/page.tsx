@@ -74,6 +74,16 @@ type FarmSummary = {
 
 type HubStatus = { active: number; ts: string };
 
+// Only the fields the inspector needs; the full agent shape lives in the
+// conversation view and in /api/agents.
+type AgentRow = {
+  id: string;
+  name: string;
+  role: string;
+  device_id: string | null;
+  active: number | boolean | null | undefined;
+};
+
 type SettingsData = {
   status: string;
   database: string;
@@ -286,13 +296,16 @@ export default function FleetDashboard() {
   const [health, setHealth] = useState<FarmDeviceHealth[]>([]);
   const [hub, setHub] = useState<HubStatus | null>(null);
   const [farmLoaded, setFarmLoaded] = useState(false);
-  const [farmError, setFarmError] = useState<null | "auth" | "error">(null);
+  const [farmError, setFarmError] = useState<null | "error">(null);
   const [farmErrorMsg, setFarmErrorMsg] = useState("");
 
   // Summary data (metrics, queue, events).
   const [summary, setSummary] = useState<FarmSummary | null>(null);
   const [summaryLoaded, setSummaryLoaded] = useState(false);
-  const [summaryError, setSummaryError] = useState<null | "auth" | "error">(null);
+  const [summaryError, setSummaryError] = useState<null | "error">(null);
+
+  // Agents (for the inspector's per-device agent row).
+  const [agents, setAgents] = useState<AgentRow[]>([]);
 
   const [range, setRange] = useState<RangeHours>(24);
   const [rangeOpen, setRangeOpen] = useState(false);
@@ -383,20 +396,47 @@ export default function FleetDashboard() {
     if (!ctrl.signal.aborted) setSummaryLoaded(true);
   }, []);
 
+  const loadAgents = useCallback(async () => {
+    try {
+      const res = await fetch("/api/agents", { cache: "no-store" });
+      const j = await res.json().catch(() => null);
+      if (res.ok && j?.success) {
+        const rows: unknown[] = Array.isArray(j.agents) ? j.agents : [];
+        const list: AgentRow[] = rows.map((raw, i) => {
+          const a = (raw ?? {}) as Record<string, unknown>;
+          return {
+            id: typeof a.id === "string" && a.id ? a.id : `agent-${i}`,
+            name: typeof a.name === "string" && a.name ? a.name : "Agent",
+            role: String(a.role ?? "custom"),
+            device_id: a.device_id == null ? null : String(a.device_id),
+            active: (a.active as AgentRow["active"]) ?? true,
+          };
+        });
+        setAgents(list.filter((a) => isActiveAgent(a.active)));
+      } else {
+        setAgents([]);
+      }
+    } catch {
+      setAgents([]);
+    }
+  }, []);
+
   // Initial load + 10s polling. Abort in-flight fetches when the page unmounts.
   useEffect(() => {
     loadFarm();
     loadSummary(rangeRef.current);
+    loadAgents();
     const t = setInterval(() => {
       loadFarm();
       loadSummary(rangeRef.current);
+      loadAgents();
     }, 10000);
     return () => {
       clearInterval(t);
       farmAbortRef.current?.abort();
       summaryAbortRef.current?.abort();
     };
-  }, [loadFarm, loadSummary]);
+  }, [loadFarm, loadSummary, loadAgents]);
 
   // Header clock, from the real clock only.
   useEffect(() => {
@@ -462,6 +502,11 @@ export default function FleetDashboard() {
   const device = devices.find((d) => d.id === sel) ?? null;
   const deviceHealth = device ? healthByDevice.get(device.id) ?? null : null;
   const deviceArt = device ? artworkById.get(device.id) ?? ARTWORK_GRAPHITE : ARTWORK_GRAPHITE;
+  // The device's phone agent, shown in the inspector's Device details card.
+  const deviceAgent = device
+    ? agents.find((a) => a.device_id === device.id && a.role === "phone") ??
+      agents.find((a) => a.device_id === device.id)
+    : undefined;
 
   // Keep a valid selection: restore the persisted one, else the first device,
   // and fall back when the selected device disappears.
@@ -520,9 +565,7 @@ export default function FleetDashboard() {
         : "Fleet status unavailable";
 
   const subline = summaryError
-    ? summaryError === "auth"
-      ? "Sign in to see fleet status."
-      : "The summary endpoint could not be reached."
+    ? "The summary endpoint could not be reached."
     : !summaryLoaded
       ? "Reading the farm database."
       : total !== null && online !== null
@@ -604,8 +647,7 @@ export default function FleetDashboard() {
         setModal(null);
         loadSummary(rangeRef.current);
         loadFarm();
-      } else if (res.status === 401 || res.redirected) {
-        setSessionError("Sign in required to schedule sessions."); else {
+      } else {
         setSessionError(String(j?.error || `Could not schedule the session (HTTP ${res.status}).`));
       }
     } catch {
@@ -633,8 +675,6 @@ export default function FleetDashboard() {
         await loadFarm();
         if (j.device?.id) selectDevice(j.device.id);
         setModal(null);
-      } else if (res.status === 401 || res.redirected) {
-        setAddError("Sign in required to add devices.");
       } else {
         setAddError(String(j?.error || `Could not add the device (HTTP ${res.status}).`));
       }
@@ -659,8 +699,7 @@ export default function FleetDashboard() {
         setCancelTarget(null);
         loadSummary(rangeRef.current);
         loadFarm();
-      } else if (res.status === 401 || res.redirected) {
-        setCancelError("Sign in required to cancel tasks."); else {
+      } else {
         setCancelError(String(j?.error || `Could not cancel the task (HTTP ${res.status}).`));
       }
     } catch {
@@ -741,15 +780,6 @@ export default function FleetDashboard() {
           <div className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-2">
             {!farmLoaded && (
               <p className="px-3 py-4 text-[12.5px] text-ink-mute">Loading devices...</p>
-            )}
-            {farmError === "auth" && (
-              <div className="px-3 py-4 text-[12.5px] leading-relaxed text-ink-dim">
-                Sign in required.
-                <br />
-                <Link href="/login" className="text-ink underline underline-offset-2">
-                  Go to login
-                </Link>
-              </div>
             )}
             {farmError === "error" && (
               <div className="px-3 py-4 text-[12.5px] leading-relaxed text-ink-dim">
@@ -919,7 +949,7 @@ export default function FleetDashboard() {
               </div>
             </div>
 
-            {/* summary error / auth banners */}
+            {/* summary error banner */}
             {summaryError === "error" && (
               <div
                 role="alert"
@@ -1264,6 +1294,14 @@ export default function FleetDashboard() {
                     tone={deviceHealth?.error ? "error" : "success"}
                     title={deviceHealth?.error || undefined}
                   />
+                  {agents.length > 0 && (
+                    <DetailRow
+                      icon={<Bot size={15} strokeWidth={1.75} />}
+                      label="Agent"
+                      value={deviceAgent?.name ?? "-"}
+                      title={deviceAgent ? undefined : "No phone agent is linked to this device."}
+                    />
+                  )}
                 </SectionCard>
 
                 <h2 className="mb-2 mt-6 text-[15px] font-semibold text-ink">Quick actions</h2>

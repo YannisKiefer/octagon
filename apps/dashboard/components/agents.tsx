@@ -121,12 +121,8 @@ export function AddAgentModal({
 
   async function create() {
     const n = name.trim();
-    if (!n) {
-      setClientError("Name is required.");
-      return;
-    }
-    if (n.length > 40) {
-      setClientError("Name must be 40 characters or fewer.");
+    if (n.length < 2 || n.length > 24) {
+      setClientError("Name must be 2 to 24 characters.");
       return;
     }
     if (role === "phone" && !deviceId) {
@@ -238,7 +234,7 @@ export function AddAgentModal({
         <button
           type="button"
           onClick={create}
-          disabled={posting}
+          disabled={posting || name.trim().length < 2}
           className="w-full bg-white hover:bg-[#E8ECF2] disabled:opacity-40 text-[#0B0E12] rounded-full py-[9px] text-[13.5px] font-semibold transition-colors"
         >
           {posting ? "Adding" : "Add agent"}
@@ -343,8 +339,8 @@ export function AgentRail({
       closeMenus();
       return;
     }
-    if (n.length > 40) {
-      setActionError("Name must be 40 characters or fewer.");
+    if (n.length < 2 || n.length > 24) {
+      setActionError("Name must be 2 to 24 characters.");
       return;
     }
     patchAgent(agent.id, { name: n });

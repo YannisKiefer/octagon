@@ -39,6 +39,9 @@ export function HandoffCard({
   const task = str(d.taskTitle) ?? str(d.task) ?? str(d.title);
   const note = str(d.note);
   const complete = Boolean(from && to && task);
+  // Today's events store the full sentence as the text, prefixed with the
+  // redundant "Handoff: " label the card itself already conveys.
+  const display = text.replace(/^Handoff:\s*/, "");
 
   return (
     <div className="flex items-start gap-2.5 rounded-card border border-hairline bg-surface px-3.5 py-2.5 max-w-[85%]">
@@ -55,7 +58,7 @@ export function HandoffCard({
             <span className="font-medium text-ink">{to}</span>
           </p>
         ) : (
-          <p className="text-[12.5px] leading-relaxed text-ink-dim">{text}</p>
+          <p className="text-[12.5px] leading-relaxed text-ink-dim">{display}</p>
         )}
         {note && <p className="mt-0.5 text-[12px] leading-relaxed text-ink-mute">{note}</p>}
       </div>
