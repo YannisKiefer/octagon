@@ -196,12 +196,15 @@ function dataStr(v: unknown): string | null {
   return typeof v === "string" && v ? v : null;
 }
 
-// Farm health states ("session", "idle", ...) mapped onto the StatusChip states.
-function deviceChipState(raw: string | undefined): "running" | "idle" | "offline" {
-  const s = (raw || "idle").toLowerCase();
-  if (s === "session" || s === "running" || s === "active") return "running";
-  if (s === "idle") return "idle";
-  return "offline";
+// Farm health mapped onto the StatusChip states - the same honest buckets as
+// the fleet view: no health row or no USB is offline, a live session is
+// running, everything else is idle.
+function deviceChipState(
+  h: Pick<Health, "usb_connected" | "session_state"> | null | undefined,
+): "running" | "idle" | "offline" {
+  if (!h || !h.usb_connected) return "offline";
+  const s = String(h.session_state || "").toLowerCase();
+  return s === "session" || s === "running" || s === "active" ? "running" : "idle";
 }
 
 // Task statuses mapped onto the StatusChip states. "canceled" has no chip
@@ -348,6 +351,12 @@ export default function OctagonChat() {
   const nearBottomRef = useRef(true);
   const selRef = useRef<string | null>(null);
   selRef.current = sel;
+  // Monotonic request counters: when two polls overlap (10s interval, device
+  // switch, send-triggered reload), only the latest response may write state.
+  const farmReqRef = useRef(0);
+  const tasksReqRef = useRef(0);
+  const agentsReqRef = useRef(0);
+  const eventsReqRef = useRef(0);
 
   const device = devices.find((d) => d.id === sel) ?? devices[0] ?? null;
   const h = device ? health.find((x) => x.device_id === device.id) ?? null : null;
@@ -393,9 +402,11 @@ export default function OctagonChat() {
   };
 
   const loadFarm = useCallback(async () => {
+    const req = ++farmReqRef.current;
     try {
       const res = await fetch("/api/farm", { cache: "no-store" });
       const j = await res.json().catch(() => null);
+      if (req !== farmReqRef.current) return;
       if (!j?.success) {
         setFarmError("error");
         setFarmErrorMsg(String(j?.error || `HTTP ${res.status}`));
@@ -406,6 +417,7 @@ export default function OctagonChat() {
         setHub(j.hubStatus ?? null);
       }
     } catch {
+      if (req !== farmReqRef.current) return;
       setFarmError("error");
       setFarmErrorMsg("The farm API is unreachable.");
     }
@@ -413,9 +425,11 @@ export default function OctagonChat() {
   }, []);
 
   const loadTasks = useCallback(async () => {
+    const req = ++tasksReqRef.current;
     try {
       const res = await fetch("/api/farm/tasks", { cache: "no-store" });
       const j = await res.json().catch(() => null);
+      if (req !== tasksReqRef.current) return;
       if (res.ok && j?.success) {
         setTasks(Array.isArray(j.tasks) ? j.tasks : []);
         setTasksError(false);
@@ -423,14 +437,17 @@ export default function OctagonChat() {
         setTasksError(true);
       }
     } catch {
+      if (req !== tasksReqRef.current) return;
       setTasksError(true);
     }
   }, []);
 
   const loadAgents = useCallback(async () => {
+    const req = ++agentsReqRef.current;
     try {
       const res = await fetch("/api/agents", { cache: "no-store" });
       const j = await res.json().catch(() => null);
+      if (req !== agentsReqRef.current) return;
       if (res.ok && j?.success) {
         const rows: unknown[] = Array.isArray(j.agents) ? j.agents : [];
         const list: Agent[] = rows.map((raw, i) => {
@@ -455,18 +472,21 @@ export default function OctagonChat() {
         setAgentsError(true);
       }
     } catch {
+      if (req !== agentsReqRef.current) return;
       setAgentsError(true);
     }
     setAgentsLoaded(true);
   }, []);
 
   const loadEvents = useCallback(async (deviceId: string) => {
+    const req = ++eventsReqRef.current;
     try {
       const res = await fetch(
         `/api/farm/events?phoneId=${encodeURIComponent(deviceId)}&limit=50`,
         { cache: "no-store" },
       );
       const j = await res.json().catch(() => null);
+      if (req !== eventsReqRef.current) return;
       if (res.ok && j?.success) {
         const rows: EventRow[] = Array.isArray(j.events) ? j.events : [];
         setMessages((prev) => ({
@@ -490,6 +510,7 @@ export default function OctagonChat() {
         setMsgError(true);
       }
     } catch {
+      if (req !== eventsReqRef.current) return;
       setMsgError(true);
     }
   }, []);
@@ -589,11 +610,14 @@ export default function OctagonChat() {
     }
   }
 
-  async function send(text: string) {
+  // Returns whether the message was sent, so the composer keeps the draft on
+  // failure and the user can retry without retyping.
+  async function send(text: string): Promise<boolean> {
     const body = text.trim();
-    if (!body || sending || !device) return;
+    if (!body || sending || !device) return false;
     setSendError("");
     setSending(true);
+    let ok = false;
     try {
       const res = await fetch("/api/farm/events", {
         method: "POST",
@@ -605,6 +629,7 @@ export default function OctagonChat() {
         await loadEvents(device.id);
         loadFarm();
         loadTasks();
+        ok = true;
       } else {
         setSendError(`Could not send: ${j?.error || `HTTP ${res.status}`}`);
       }
@@ -612,9 +637,11 @@ export default function OctagonChat() {
       setSendError("Could not send. The farm API is unreachable.");
     }
     setSending(false);
+    return ok;
   }
 
   async function addDevice() {
+    if (adding) return; // Enter in the input bypasses the disabled button.
     const p = addPrefix.trim();
     if (p.length < 2 || p.length > 20) {
       setAddError("Prefix must be 2 to 20 characters.");
@@ -775,7 +802,7 @@ export default function OctagonChat() {
                     </span>
                   </span>
                   <span className="flex items-center gap-[6px] mt-[4px]">
-                    <StatusChip state={deviceChipState(dh?.session_state)} />
+                    <StatusChip state={deviceChipState(dh)} />
                     <span className="text-[12px] text-ink-dim tnum truncate">
                       {(dh?.swipes ?? 0).toLocaleString("en-US")} swipes
                     </span>
@@ -853,7 +880,7 @@ export default function OctagonChat() {
                   color={avatarColor(device.id)}
                 />
                 <div className="ml-auto flex items-center gap-2.5 shrink-0">
-                  <StatusChip state={deviceChipState(h?.session_state)} />
+                  <StatusChip state={deviceChipState(h)} />
                   <span className="text-[12px] text-ink-dim tnum">
                     {(h?.swipes ?? 0).toLocaleString("en-US")} swipes
                   </span>

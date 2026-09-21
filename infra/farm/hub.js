@@ -8,7 +8,7 @@ let Database;
 try { Database = require('better-sqlite3'); } catch { console.error('[hub] better-sqlite3 not found. Run: cd infra/farm && npm install'); process.exit(1); }
 
 const getArg = (n,d)=>{const m=process.argv.slice(2).find(a=>a.startsWith(`--${n}=`)); return m?m.split("=")[1]:d};
-const SLOTS = parseInt(getArg('slots','4'),10);
+const SLOTS = parseInt(getArg('slots','4'),10) || 4; // NaN guard: a bad --slots value must not empty the slot list
 const DUR = parseFloat(getArg('duration','60')); // minutes, fractions allowed
 const TEST = process.argv.includes('--test'); // --test = silent dry run: no TTS, no chatter
 const DB_PATH = process.env.FARM_DB_PATH || path.join(__dirname, '..', 'db', 'farm.db');
@@ -39,6 +39,7 @@ function log(m){ console.log(`[HUB] ${m}`); }
 function hubEvent(deviceId, event, level){
   try{
     const db=new Database(DB_PATH);
+    db.pragma("busy_timeout=5000");
     db.prepare("INSERT INTO farm_events (id, ts, level, device_id, event, data) VALUES (?,?,?,?,?,?)")
       .run(require('crypto').randomUUID(), new Date().toISOString(), level||'warn', deviceId, event, '{}');
     db.close();
@@ -91,10 +92,16 @@ async function main(){
   // sweep tasks orphaned by a previous hub death mid-session
   try{
     const db=new Database(DB_PATH);
+    db.pragma("busy_timeout=5000");
     const swept=db.prepare("UPDATE farm_tasks SET status='failed', error='hub went down mid-session', updated_at=? WHERE status='running'").run(new Date().toISOString());
-    if(swept.changes>0) log(`swept ${swept.changes} orphaned running task(s)`);
+    if(swept.changes>0){
+      log(`swept ${swept.changes} orphaned running task(s)`);
+      // their brains died with the hub: clear the phantom "session" state so
+      // status/summary stop counting sessions that no longer exist
+      db.prepare("UPDATE farm_device_health SET session_state='idle', updated_at=? WHERE session_state='session'").run(new Date().toISOString());
+    }
     db.close();
-  }catch{}
+  }catch(e){ log(`orphan sweep failed: ${e.message}`); }
   if(TEST) console.log('Silent dry run: brains poll the task queue and nothing is spoken. Queue sessions from the dashboard chat or MCP to see them execute.\n');
   const toSpawn=slotConfigs();
   for(let i=0;i<toSpawn.length;i++){

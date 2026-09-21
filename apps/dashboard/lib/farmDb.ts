@@ -2,20 +2,14 @@ import Database from "better-sqlite3";
 import path from "path";
 import crypto from "crypto";
 
-const DB_PATH = path.join(
+export const DB_PATH = path.join(
   process.env.FARM_DB_PATH || path.resolve(process.cwd(), "..", "..", "infra", "db", "farm.db"),
 );
 
-export type FarmDevice = {
-  id: string;
-  phone_number: number;
-  display_name: string;
-  voice_prefix: string;
-  usb_udid: string;
-  active: number;
-  created_at: string;
-  updated_at: string;
-};
+// Device, health and task shapes live in farmTypes.ts (shared with the UI);
+// they are re-exported here so existing "@/lib/farmDb" imports keep working.
+import type { FarmDevice, FarmDeviceHealth, FarmTask } from "./farmTypes";
+export type { FarmDevice, FarmDeviceHealth, FarmTask } from "./farmTypes";
 
 export type FarmAgentRole = "phone" | "monitor" | "supervisor" | "custom";
 
@@ -27,39 +21,6 @@ export type FarmAgent = {
   color: string;
   status: string;
   active: number;
-  created_at: string;
-  updated_at: string;
-};
-
-export type FarmDeviceHealth = {
-  device_id: string;
-  usb_connected: number;
-  last_usb_seen_at: string | null;
-  session_state: string;
-  current_task_id: string;
-  swipes: number;
-  likes: number;
-  saves: number;
-  comments: number;
-  profiles: number;
-  last_action: string;
-  last_action_at: string | null;
-  jitter_variance: number;
-  error: string;
-  updated_at: string;
-};
-
-export type FarmTask = {
-  id: string;
-  type: "session";
-  device_id: string | null;
-  scheduled_for: string;
-  status: "scheduled" | "running" | "succeeded" | "failed" | "canceled";
-  payload: string;
-  started_at: string | null;
-  finished_at: string | null;
-  result: string;
-  error: string;
   created_at: string;
   updated_at: string;
 };
@@ -92,7 +53,7 @@ export function getFarmDb({ readonly = false }: { readonly?: boolean } = {}): Da
   return getFarmDbRW();
 }
 
-export function ensureFarmSchema(db: Database.Database): void {
+function ensureFarmSchema(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS farm_devices (
       id TEXT PRIMARY KEY,
@@ -215,8 +176,9 @@ function seedFarmDevicesIfEmpty(db: Database.Database): void {
 }
 
 // One phone-agent color per device, rotating by phone_number so two agents
-// never share a color within the default fleet.
-const AGENT_COLORS = ["#529BFF", "#F59E0B", "#A78BFA", "#F97070", "#7F8B9B"];
+// never share a color within the default fleet. Exported for the create-agent
+// route, which rotates by existing agent count instead.
+export const AGENT_COLORS = ["#529BFF", "#F59E0B", "#A78BFA", "#F97070", "#7F8B9B"];
 
 // The farm's standing crew, created once: a supervisor everyone can address,
 // a monitor, and one phone agent per registered device. Only seeds when
@@ -282,6 +244,15 @@ export function listFarmTasks(fromIso?: string, toIso?: string): FarmTask[] {
   return db.prepare("SELECT * FROM farm_tasks ORDER BY scheduled_for DESC, created_at DESC LIMIT 500").all() as FarmTask[];
 }
 
+// Live queue for GET /api/farm: scheduled and running tasks only, oldest
+// scheduled first. Served directly by idx_farm_tasks_status_scheduled instead
+// of scanning the newest 500 rows and filtering in JS.
+export function listActiveFarmTasks(): FarmTask[] {
+  return getFarmDb({ readonly: true })
+    .prepare("SELECT * FROM farm_tasks WHERE status IN ('scheduled','running') ORDER BY scheduled_for ASC")
+    .all() as FarmTask[];
+}
+
 export type FarmEvent = { id: string; ts: string; level: string; device_id: string | null; task_id: string | null; event: string; data: string };
 export function listFarmEvents(limit = 50, deviceId?: string): FarmEvent[] {
   try {
@@ -316,6 +287,21 @@ export function createFarmDevice(prefix: string, displayName?: string): FarmDevi
     .run(id, phone, displayName || `${prefix} (Phone ${phone})`, prefix, now, now);
   db.prepare("INSERT INTO farm_device_health (device_id, usb_connected, session_state, updated_at) VALUES (?, 0, 'idle', ?)")
     .run(id, now);
+  // Devices added after first init get their phone agent automatically, so the
+  // one-agent-per-device crew stays complete without a manual step. Only when
+  // the crew already exists (seeded); guarded so databases without the
+  // farm_agents table - or with the name already taken - keep working.
+  try {
+    const agents = (db.prepare("SELECT COUNT(*) AS c FROM farm_agents").get() as { c: number }).c;
+    if (agents > 0) {
+      db.prepare(
+        "INSERT INTO farm_agents (id, name, role, device_id, color, status, active, created_at, updated_at) VALUES (?, ?, 'phone', ?, ?, 'idle', 1, ?, ?)",
+      ).run(crypto.randomUUID(), `${prefix} Agent`, id, AGENT_COLORS[(phone - 1) % AGENT_COLORS.length], now, now);
+    }
+  } catch {
+    // No farm_agents table (old database) or a conflicting agent name: the
+    // device is still created and an agent can be added manually.
+  }
   return db.prepare("SELECT * FROM farm_devices WHERE id = ?").get(id) as FarmDevice;
 }
 
@@ -353,18 +339,14 @@ type FinishedTaskRow = { status: string; started_at: string | null; finished_at:
 type QueueTaskRow = { id: string; type: string; device_id: string | null; status: string; payload: string; created_at: string };
 type EventRow = { id: string; ts: string; device_id: string | null; event: string };
 
-// swipes.count is the SUM of the CURRENT farm_device_health.swipes counters.
-// Those are LIFETIME counters, not per-window deltas: the health table stores
-// one running total per device and we keep no historical snapshots, so a
-// window-over-window delta cannot be computed yet. deltaPct is therefore
-// always null for now; the UI renders the delta chip only when it is non-null.
 export function humanizeTaskTitle(type: string, payload: string): string {
   if (type !== "session") return type;
   try {
     const parsed = JSON.parse(payload || "{}") as { duration_minutes?: unknown };
     const minutes = Number(parsed?.duration_minutes);
     if (Number.isFinite(minutes) && minutes > 0) {
-      return `Pacing session - ${Math.round(minutes)} min`;
+      // Floor at 1 so a sub-minute task never shows a "0 min" title.
+      return `Pacing session - ${Math.max(1, Math.round(minutes))} min`;
     }
   } catch {
     // Malformed payload: fall through to the generic title.
@@ -396,6 +378,11 @@ export function getFarmSummary(rangeHours: number): FarmSummary {
 
   const online = count(db.prepare("SELECT COUNT(*) AS c FROM farm_device_health WHERE usb_connected = 1"));
   const total = count(db.prepare("SELECT COUNT(*) AS c FROM farm_devices WHERE active = 1"));
+  // swipes.count is the SUM of the CURRENT farm_device_health.swipes counters.
+  // Those are LIFETIME counters, not per-window deltas: the health table stores
+  // one running total per device and we keep no historical snapshots, so a
+  // window-over-window delta cannot be computed yet. deltaPct is therefore
+  // always null for now; the UI renders the delta chip only when it is non-null.
   const swipesTotal = count(db.prepare("SELECT COALESCE(SUM(swipes), 0) AS c FROM farm_device_health"));
   const sessionsActive = count(db.prepare("SELECT COUNT(*) AS c FROM farm_tasks WHERE status = 'running'"));
   const startedInRange = count(

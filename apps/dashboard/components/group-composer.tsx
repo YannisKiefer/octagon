@@ -7,7 +7,10 @@ import type { Agent } from "./agents";
 /* The conversation composer for the group chat. Same look as the shared
    Composer, plus the group-chat affordance: when the message starts with "@"
    a tiny hint under the bar names the agent being addressed, resolved against
-   the real agent list - unknown names say so instead of guessing. */
+   the real agent list with the same rule the server uses (the full name after
+   "@", optionally followed by more words) - unknown names say so instead of
+   guessing. onSend returns whether the message was sent; the draft is only
+   cleared on success, so a failed send keeps the text for a retry. */
 export function GroupComposer({
   placeholder,
   onSend,
@@ -15,7 +18,7 @@ export function GroupComposer({
   agents,
 }: {
   placeholder: string;
-  onSend: (text: string) => void;
+  onSend: (text: string) => boolean | Promise<boolean>;
   disabled?: boolean;
   agents: Agent[];
 }) {
@@ -23,23 +26,29 @@ export function GroupComposer({
 
   const trimmedStart = value.trimStart();
   const addressing = trimmedStart.startsWith("@");
-  const token = addressing ? (trimmedStart.slice(1).match(/^\S+/)?.[0] ?? "") : "";
+  const afterMention = addressing ? trimmedStart.slice(1).trimStart().toLowerCase() : "";
 
   let hint: string | null = null;
   if (addressing) {
-    if (!token) {
+    if (!afterMention) {
       hint = "Type an agent name after @";
     } else {
-      const match = agents.find((a) => a.name.toLowerCase().startsWith(token.toLowerCase()));
-      hint = match ? `This will address ${match.name}` : `No agent matches "@${token}"`;
+      const match = agents.find(
+        (a) =>
+          afterMention === a.name.toLowerCase() ||
+          afterMention.startsWith(`${a.name.toLowerCase()} `),
+      );
+      hint = match
+        ? `This will address ${match.name}`
+        : `No agent matches "@${trimmedStart.slice(1).trim()}"`;
     }
   }
 
-  const submit = () => {
+  const submit = async () => {
     const text = value.trim();
     if (!text || disabled) return;
-    onSend(text);
-    setValue("");
+    const ok = await onSend(text);
+    if (ok) setValue("");
   };
 
   return (

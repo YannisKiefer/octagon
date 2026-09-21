@@ -120,6 +120,7 @@ export function AddAgentModal({
   const [posting, setPosting] = useState(false);
 
   async function create() {
+    if (posting) return; // Enter in the input bypasses the disabled button.
     const n = name.trim();
     if (n.length < 2 || n.length > 24) {
       setClientError("Name must be 2 to 24 characters.");
@@ -307,6 +308,7 @@ export function AgentRail({
   }
 
   async function patchAgent(id: string, body: Record<string, unknown>) {
+    if (busy) return; // Enter and blur can both fire commitRename.
     setBusy(true);
     setActionError("");
     try {

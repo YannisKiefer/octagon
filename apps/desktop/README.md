@@ -7,10 +7,10 @@ managed child process.
 
 ```
 apps/desktop/
-├── main.js                  Electron main process (window, menu, lifecycle)
-├── preload.js               contextBridge: window.octagonDesktop (open-settings)
+├── main.js                  Electron main process (window, menu, lifecycle, updater)
+├── preload.js               contextBridge: window.octagonDesktop (open-settings, updater bridge)
 ├── electron-builder.yml     packaging config (dmg + zip, arm64, ad-hoc sign)
-├── build/icon.png           1024x1024 icon (generated from public/glyph-white.png via sips)
+├── build/icon.png, icon.icns  app icon (approved glass artwork)
 ├── scripts/
 │   ├── prepare-resources.js   copies .next/standalone -> standalone/, infra/farm -> farm/
 │   ├── rebuild-native.js      better-sqlite3 -> Electron ABI for both copies (+ verify gate)
@@ -83,16 +83,24 @@ then runs `gate:packaged`:
   then `app.exit(0)`.
 - **Hub**: spawned with `ELECTRON_RUN_AS_NODE=1` and `process.execPath`
   (Electron binary as node), args `--slots=4 --duration=60`,
-  `FARM_DB_PATH=<userData>/farm.db`. Unexpected exits restart with backoff
-  (2s/4s/6s + jitter), max 3, then it gives up and logs.
+  `FARM_DB_PATH=<userData>/farm.db`. Unexpected exits restart with linear
+  backoff (2s/4s/6s), max 3, then it gives up and logs. The Next server child
+  uses the same supervision (one code path in `main.js`).
+- **Updater**: a "Check for Updates…" menu item plus one quiet check ~15 s
+  after launch; a newer version shows the in-app banner. Installing downloads
+  the `arm64.dmg` from GitHub releases, mounts it, swaps
+  `/Applications/Octagon.app` in place and relaunches (running from a DMG
+  instead opens the mounted volume for the usual drag). No Squirrel/
+  electron-updater - unsigned builds cannot use them; feed is overridable with
+  `OCTAGON_UPDATE_FEED`.
 - **Next server**: standalone `server.js` runs as a child process (also
   `ELECTRON_RUN_AS_NODE=1`) - never required into the main process. Port is a
   random free port on `127.0.0.1`; the window loads only after `/api/health`
   answers. Unexpected exits restart like the hub.
-- **Menu**: App (About, Settings… Cmd+, -> `webContents.send('open-settings')`,
-  Quit), Edit (standard roles), View (reload, zoom, devtools unpackaged/dev
-  only), Window (Minimize, Close + the background note), Help (Open Data
-  Folder).
+- **Menu**: App (About, Check for Updates…, Settings… Cmd+, ->
+  `webContents.send('open-settings')`, Quit), Edit (standard roles), View
+  (reload, zoom, devtools unpackaged/dev only), Window (Minimize, Close + the
+  background note), Help (Open Data Folder).
 - **Security**: `contextIsolation`, `sandbox`, `nodeIntegration: false`,
   `webSecurity: true` (do not disable - it is what makes the 127.0.0.1 origin
   safe), `setWindowOpenHandler` denies and forwards external http(s) links to

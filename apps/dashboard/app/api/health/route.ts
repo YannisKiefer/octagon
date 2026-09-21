@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import path from "path";
 import fs from "fs";
+import { DB_PATH } from "@/lib/farmDb";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const dbPath =
-    process.env.FARM_DB_PATH ||
-    path.resolve(process.cwd(), "..", "..", "infra", "db", "farm.db");
+  const dbPath = DB_PATH;
 
   let dbStatus: "ok" | "missing" | "error" = "missing";
   try {

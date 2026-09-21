@@ -87,8 +87,10 @@ Consequences:
 - On machines without the quarantine attribute cleared, Gatekeeper blocks
   first launch; on Sequoia 15+ the right-click-Open bypass is gone - users
   must use System Settings -> Privacy & Security -> Open Anyway (see README).
-- No auto-update (Squirrel/electron-updater require signed, notarized
-  builds). Deferred entirely.
+- Squirrel/electron-updater remain out (they require signed, notarized
+  builds). Updates instead ship through the in-app updater: it checks GitHub
+  releases and swaps the app bundle from the release DMG - a path that works
+  for ad-hoc signed builds.
 
 ## 5. Login removed - none required
 
@@ -97,14 +99,7 @@ local-only open-source software with no login and no accounts; the bundled
 server needs no auth environment variables. `OCTAGON_DESKTOP=1` is still set
 for the bundled server as a general process marker.
 
-## 6. Icon is square, not rounded
-
-`build/icon.png` is composed with `sips` (resize glyph + pad onto `#0B0E12`).
-`sips` cannot round corners, so the dock icon is a dark square with the white
-glyph. Cosmetic only; replace with a proper `.icns` (rounded mask, all sizes)
-when design tooling is available.
-
-## 7. Not verified in this pass
+## 6. Not verified in this pass
 
 - Real multi-phone farm sessions (needs physical devices); the hub was
   verified with `--test` (silent dry run) only - boots, spawns the per-phone

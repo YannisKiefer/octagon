@@ -1,6 +1,6 @@
 # Contributing to Octagon
 
-Octagon is a local-first console for automating iPhones you own over iOS Voice Control. Your Mac speaks cues like "Alpha Swipe Next" and the phone executes them. Today that means pacing sessions, device health, and an honest event log. The direction is bigger: see [VISION.md](VISION.md) - one conversation, many agents, many phones. The product deliberately has no features that fake engagement. Helping improve that is welcome. Breaking it is not.
+Octagon is a local-first console for automating iPhones you own over iOS Voice Control. Your Mac speaks cues like "Alpha Swipe Next" and the phone executes them. Today that means pacing sessions, device health, an honest event log, and the multi-agent chat layer (named agents, @mentions, task handoffs). Where it goes next: [VISION.md](VISION.md) - one conversation, many agents, many phones. The product deliberately has no features that fake engagement. Helping improve that is welcome. Breaking it is not.
 
 ## Dev setup
 
@@ -18,7 +18,7 @@ You need Node 20 or newer. Hardware features need macOS, but the dry-run path wo
    cp .env.example .env
    ```
 
-3. Install dependencies. There are two packages, both need it (`better-sqlite3` is a native module, so the first install compiles):
+3. Install dependencies for both packages below (`better-sqlite3` is a native module, so the first install compiles). The optional desktop shell in `apps/desktop` installs separately - see apps/desktop/README.md:
 
    ```bash
    npm install --prefix infra/farm
@@ -44,6 +44,8 @@ You need Node 20 or newer. Hardware features need macOS, but the dry-run path wo
    ```bash
    node tests/test_octagon.mjs
    ```
+
+   The suite is 58 checks; it ends with `All 58 checks passed` when everything is green.
 
 ## What PRs should serve
 

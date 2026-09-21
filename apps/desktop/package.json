@@ -1,11 +1,11 @@
 {
   "name": "octagon-desktop",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Octagon desktop shell - native macOS wrapper for the local dashboard and farm hub",
   "main": "main.js",
   "scripts": {
-    "dev": "NEXT_DEV_URL=http://localhost:3010 OCTAGON_DESKTOP_DEV=1 electron .",
+    "dev": "NEXT_DEV_URL=http://localhost:3010 electron .",
     "build:dashboard": "cd ../dashboard && NEXT_TELEMETRY_DISABLED=1 npm run build",
     "prepare:resources": "node scripts/prepare-resources.js",
     "rebuild:native": "node scripts/rebuild-native.js",

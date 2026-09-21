@@ -63,7 +63,11 @@ export async function POST(req: Request) {
     const lower = text.toLowerCase();
     let reply: string;
     // "run 20" means 20 minutes; "run 1.5h" means 90. A bare "run" defaults to 10.
-    const minutesMatch = lower.match(/(\d{1,3}(?:\.\d)?)\s*(hours?|h\b|minutes?|min|m\b)?/);
+    // Parse only for run intents, so numbers in other messages ("like 0 posts")
+    // cannot hijack the reply; 4 digits so "run 1000" clamps to 180 instead of
+    // silently truncating to 100.
+    const runIntent = /\b(run|start|session|pace)\b/.test(lower) && !/\b(status|stop|cancel)\b/.test(lower);
+    const minutesMatch = runIntent ? lower.match(/(\d{1,4}(?:\.\d)?)\s*(hours?|h\b|minutes?|min|m\b)?/) : null;
     let minutes = 10;
     let badDuration = false;
     if (minutesMatch) {
@@ -80,7 +84,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, userEvent, replyEvent });
     }
 
-    if (/\b(run|start|session|pace)\b/.test(lower) && !/\b(status|stop|cancel)\b/.test(lower)) {
+    if (runIntent) {
       const db = getFarmDb({ readonly: false });
       const now = new Date().toISOString();
       db.prepare("INSERT INTO farm_tasks (id, type, device_id, scheduled_for, status, payload, created_at, updated_at) VALUES (?, 'session', ?, ?, 'scheduled', ?, ?, ?)")

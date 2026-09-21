@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { getFarmDb, listFarmAgents } from "@/lib/farmDb";
+import { getFarmDb, listFarmAgents, AGENT_COLORS } from "@/lib/farmDb";
 import type { FarmAgent, FarmAgentRole } from "@/lib/farmDb";
 
 export const runtime = "nodejs";
@@ -63,12 +63,15 @@ export async function POST(req: Request) {
       }
     }
 
+    // Rotate through the fleet palette by existing agent count instead of
+    // hardcoding one color, so new agents stay visually distinguishable.
+    const agentCount = (db.prepare("SELECT COUNT(*) AS c FROM farm_agents").get() as { c: number }).c;
     const agent: FarmAgent = {
       id: crypto.randomUUID(),
       name,
       role,
       device_id: role === "phone" ? deviceId : null,
-      color: "#529BFF",
+      color: AGENT_COLORS[agentCount % AGENT_COLORS.length],
       status: "idle",
       active: 1,
       created_at: now,

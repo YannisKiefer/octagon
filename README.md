@@ -70,7 +70,7 @@ Nine tools: phones, sessions, events, screens, agents, handoffs. Details in [mcp
 
 You need: one Mac, one or more iPhones, 10 minutes. No account, no login.
 
-**Just want the app?** Grab the [DMG](https://github.com/YannisKiefer/octagon/releases/latest/download/Octagon-1.1.0-arm64.dmg) (Apple Silicon), drag it to Applications. Unsigned, so macOS asks once: System Settings → Privacy & Security → **Open Anyway**.
+**Just want the app?** Grab the [DMG](https://github.com/YannisKiefer/octagon/releases/latest/download/Octagon-1.1.0-arm64.dmg) (Apple Silicon), drag it to Applications. Unsigned, so macOS asks once: System Settings → Privacy & Security → **Open Anyway**. Updates install in-app: Octagon checks GitHub releases and offers the new version (menu item plus banner).
 
 From source:
 

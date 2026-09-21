@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getFarmDb, listFarmDevices, getFarmHealth, listFarmTasks } from "@/lib/farmDb";
+import { getFarmDb, listFarmDevices, getFarmHealth, listActiveFarmTasks } from "@/lib/farmDb";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const devices = listFarmDevices();
     const health = getFarmHealth();
-    const scheduled = listFarmTasks().filter(t=>t.status==="scheduled" || t.status==="running");
+    const scheduled = listActiveFarmTasks();
 
     let hubStatus = null;
     try {

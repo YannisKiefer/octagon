@@ -36,16 +36,11 @@ const SERVER_JS = findServerJs(STANDALONE_DIR);
 const HUB_JS = path.join(resourcesRoot, 'farm', 'hub.js');
 
 const HUB_ARGS = ['--slots=4', '--duration=60'];
-const CHILD_MAX_RESTARTS = 3;
 const QUIT_SHUTDOWN_BUDGET_MS = 5000;
 
 let mainWindow = null;
 let appUrl = null;
 let serverPort = 0;
-let hubProc = null;
-let hubRestarts = 0;
-let nextProc = null;
-let nextRestarts = 0;
 let quitting = false;
 
 // ---------------------------------------------------------------------------
@@ -113,76 +108,65 @@ function stopChild(proc, graceMs) {
 }
 
 // ---------------------------------------------------------------------------
-// bundled Next.js standalone server (child process)
+// supervised children: the bundled Next server and the farm hub, each the
+// Electron binary run as plain node, restarted with bounded linear backoff
 // ---------------------------------------------------------------------------
 
-function startNextServer(port) {
-  if (!fs.existsSync(SERVER_JS)) {
-    logErr(`bundled server missing: ${SERVER_JS} - run npm run build:app first`);
+const CHILD_MAX_RESTARTS = 3;
+const children = {
+  next: { proc: null, restarts: 0 },
+  hub: { proc: null, restarts: 0 },
+};
+
+// Shared supervision: spawn `args`, pipe logs as [tag]/[tag:err], and on an
+// unplanned exit restart at most CHILD_MAX_RESTARTS times (backoff 2s/4s/6s).
+// Returns false when the entry script is missing (and logs `missing`).
+function startChild(name, { file, missing, args, env = {}, tag = name, onUp }) {
+  const c = children[name];
+  if (quitting) return false;
+  if (!fs.existsSync(file)) {
+    logErr(missing);
     return false;
   }
-  serverPort = port;
-  nextProc = spawn(process.execPath, [SERVER_JS], {
-    env: childEnv({
-      NODE_ENV: 'production',
-      PORT: String(port),
-      HOSTNAME: '127.0.0.1',
-      NEXT_TELEMETRY_DISABLED: '1',
-    }),
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  log(`next server starting pid=${nextProc.pid} port=${port}`);
-  nextProc.stdout.on('data', (d) => process.stdout.write('[next] ' + d));
-  nextProc.stderr.on('data', (d) => process.stderr.write('[next:err] ' + d));
-  nextProc.on('exit', (code, signal) => {
-    nextProc = null;
-    log(`next server exited code=${code} signal=${signal}`);
+  c.proc = spawn(process.execPath, args, { env: childEnv(env), stdio: ['ignore', 'pipe', 'pipe'] });
+  log(`${name} started pid=${c.proc.pid}`);
+  c.proc.stdout.on('data', (d) => process.stdout.write(`[${tag}] ` + d));
+  c.proc.stderr.on('data', (d) => process.stderr.write(`[${tag}:err] ` + d));
+  c.proc.on('exit', (code, signal) => {
+    c.proc = null;
+    log(`${name} exited code=${code} signal=${signal}`);
     if (quitting) return;
-    // the UI dies with the server - bring it back (bounded, like the hub)
-    if (nextRestarts < CHILD_MAX_RESTARTS) {
-      nextRestarts += 1;
-      const delay = 2000 * nextRestarts;
-      log(`next server restart ${nextRestarts}/${CHILD_MAX_RESTARTS} in ${delay}ms`);
-      setTimeout(async () => {
-        startNextServer(serverPort);
-        try { await waitForServer(serverPort, 15000); log(`server ready on port ${serverPort}`); }
-        catch (e) { logErr(e.message); }
-      }, delay);
-    } else {
-      logErr(`next server hit the restart limit (${CHILD_MAX_RESTARTS})`);
-    }
+    if (c.restarts >= CHILD_MAX_RESTARTS) return logErr(`${name} hit the restart limit (${CHILD_MAX_RESTARTS}); not restarting`);
+    c.restarts += 1;
+    const delay = 2000 * c.restarts;
+    log(`${name} restart ${c.restarts}/${CHILD_MAX_RESTARTS} in ${delay}ms`);
+    setTimeout(() => {
+      if (startChild(name, { file, missing, args, env, tag, onUp }) && onUp) onUp();
+    }, delay);
   });
   return true;
 }
 
-// ---------------------------------------------------------------------------
-// farm hub child process (Electron binary as node)
-// ---------------------------------------------------------------------------
+function startNextServer(port) {
+  serverPort = port;
+  return startChild(`next server (port ${port})`, {
+    file: SERVER_JS,
+    missing: `bundled server missing: ${SERVER_JS} - run npm run build:app first`,
+    args: [SERVER_JS],
+    env: { NODE_ENV: 'production', PORT: String(port), HOSTNAME: '127.0.0.1', NEXT_TELEMETRY_DISABLED: '1' },
+    tag: 'next',
+    onUp: async () => {
+      try { await waitForServer(serverPort, 15000); log(`server ready on port ${serverPort}`); }
+      catch (e) { logErr(e.message); }
+    },
+  });
+}
 
 function startHub() {
-  if (quitting || !fs.existsSync(HUB_JS)) {
-    if (!fs.existsSync(HUB_JS)) logErr(`hub not found at ${HUB_JS} - run npm run prepare:resources`);
-    return;
-  }
-  hubProc = spawn(process.execPath, [HUB_JS, ...HUB_ARGS], {
-    env: childEnv({}),
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  log(`hub started pid=${hubProc.pid} (${HUB_ARGS.join(' ')})`);
-  hubProc.stdout.on('data', (d) => process.stdout.write('[hub] ' + d));
-  hubProc.stderr.on('data', (d) => process.stderr.write('[hub:err] ' + d));
-  hubProc.on('exit', (code, signal) => {
-    hubProc = null;
-    log(`hub exited code=${code} signal=${signal}`);
-    if (quitting) return;
-    if (hubRestarts < CHILD_MAX_RESTARTS) {
-      hubRestarts += 1;
-      const delay = 2000 * hubRestarts + Math.floor(Math.random() * 1000); // backoff 2s/4s/6s (+jitter)
-      log(`hub restart ${hubRestarts}/${CHILD_MAX_RESTARTS} in ${delay}ms`);
-      setTimeout(startHub, delay);
-    } else {
-      logErr(`hub hit the restart limit (${CHILD_MAX_RESTARTS}); not restarting`);
-    }
+  startChild('hub', {
+    file: HUB_JS,
+    missing: `hub not found at ${HUB_JS} - run npm run prepare:resources`,
+    args: [HUB_JS, ...HUB_ARGS],
   });
 }
 
@@ -235,7 +219,6 @@ async function checkForUpdate() {
   return {
     available: true, current: app.getVersion(), version: latest,
     url: dmg ? dmg.browser_download_url : null,
-    htmlUrl: feed.html_url || null,
   };
 }
 function downloadFile(url, dest, onProgress) {
@@ -359,21 +342,19 @@ function loadBounds() {
   const defaults = { width: 1280, height: 860 };
   try {
     const raw = JSON.parse(fs.readFileSync(userDataPath('bounds.json'), 'utf8'));
+    const { screen } = require('electron');
+    const area = screen.getPrimaryDisplay().workArea;
     const b = {
-      width: Number(raw.width) || defaults.width,
-      height: Number(raw.height) || defaults.height,
+      width: Math.min(Math.max(Number(raw.width) || defaults.width, 1100), area.width),
+      height: Math.min(Math.max(Number(raw.height) || defaults.height, 700), area.height),
     };
-    if (Number.isFinite(raw.x) && Number.isFinite(raw.y)) { b.x = Math.round(raw.x); b.y = Math.round(raw.y); }
-    // keep the restored window inside a visible display
-    if (b.x !== undefined) {
-      const { screen } = require('electron');
-      const area = screen.getPrimaryDisplay().workArea;
-      const onScreen = b.x + 100 >= area.x && b.x < area.x + area.width &&
-                       b.y + 40 >= area.y && b.y < area.y + area.height;
-      if (!onScreen) { delete b.x; delete b.y; }
+    // restore x/y only if the window would land on a visible display
+    if (Number.isFinite(raw.x) && Number.isFinite(raw.y) &&
+        raw.x + 100 >= area.x && raw.x < area.x + area.width &&
+        raw.y + 40 >= area.y && raw.y < area.y + area.height) {
+      b.x = Math.round(raw.x);
+      b.y = Math.round(raw.y);
     }
-    b.width = Math.min(Math.max(b.width, 1100), area.width);
-    b.height = Math.min(Math.max(b.height, 700), area.height);
     return b;
   } catch {
     return defaults;
@@ -492,14 +473,14 @@ app.on('before-quit', (e) => {
   const deadline = new Promise((r) => setTimeout(r, QUIT_SHUTDOWN_BUDGET_MS));
   Promise.race([
     Promise.all([
-      stopChild(hubProc, QUIT_SHUTDOWN_BUDGET_MS),
-      stopChild(nextProc, QUIT_SHUTDOWN_BUDGET_MS),
+      stopChild(children.hub.proc, QUIT_SHUTDOWN_BUDGET_MS),
+      stopChild(children.next.proc, QUIT_SHUTDOWN_BUDGET_MS),
     ]),
     deadline,
   ]).then(() => {
     // make sure nothing survived the SIGTERM grace window
-    try { hubProc && hubProc.kill('SIGKILL'); } catch { /* gone */ }
-    try { nextProc && nextProc.kill('SIGKILL'); } catch { /* gone */ }
+    try { if (children.hub.proc) children.hub.proc.kill('SIGKILL'); } catch { /* gone */ }
+    try { if (children.next.proc) children.next.proc.kill('SIGKILL'); } catch { /* gone */ }
     log('children stopped; exiting');
     app.exit(0);
   });

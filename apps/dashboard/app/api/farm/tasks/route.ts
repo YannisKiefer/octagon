@@ -19,6 +19,9 @@ export async function GET(req: Request) {
 
     if (date) {
       const startLocal = new Date(`${date}T00:00:00`);
+      if (Number.isNaN(startLocal.getTime())) {
+        return NextResponse.json({ success: false, error: "Invalid date, expected YYYY-MM-DD" }, { status: 400 });
+      }
       const endLocal = new Date(`${date}T00:00:00`);
       endLocal.setDate(endLocal.getDate() + 1);
       const tasks = listFarmTasks(startLocal.toISOString(), endLocal.toISOString());

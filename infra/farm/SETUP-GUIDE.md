@@ -37,8 +37,8 @@ cp .env.example .env
 
 Edit `.env`:
 
-- `FARM_PHONE1_PREFIX`..`FARM_PHONE4_PREFIX` - the voice prefixes, `Alpha`, `Bravo`, `Charlie`, `Delta` by default. Leave them as they are unless you change the Voice Control commands to match.
-- `FARM_PHONE1_UDID`..`FARM_PHONE4_UDID` - optional, only needed for screen capture (step 8).
+- `FARM_PHONE1_PREFIX`..`FARM_PHONE4_PREFIX` - optional; used only when the dashboard initializes an empty database, as each device's `voice_prefix` (`Alpha`, `Bravo`, `Charlie`, `Delta` by default). The prefixes the brains actually speak come from the database afterwards - if you change a Voice Control command, update `voice_prefix` there.
+- `FARM_PHONE1_UDID`..`FARM_PHONE4_UDID` - optional, seeded into the devices' `usb_udid` on the same first initialization; only needed for screen capture (step 8). On an existing database the values live in `farm_devices`, not in `.env`.
 
 There is no login and no required auth configuration - the dashboard is local-only.
 
@@ -59,6 +59,8 @@ npm run dev
 ```
 
 `scripts/seed-demo.js` resets `infra/db/farm.db` and fills it with clearly synthetic demo data (4 phones, a fake chat transcript). Open **http://localhost:3010**. No login - the dashboard is local-only; the same is true for a production build (`npm run build && npm run start`).
+
+**Try it with demo data:** on a fresh, empty database the dashboard shows a first-run overlay with a **Load demo data** button. It fills the farm through `POST /api/farm/demo` with the same synthetic transcript as the seeder - no phones, no seeder run needed. The endpoint refuses (HTTP 409) when the database already holds data, so demo content never mixes into a real farm.
 
 What you see: phones on the left, per-phone chat in the center, sessions on the right. Everything in demo mode is fake and labeled synthetic.
 
@@ -116,7 +118,7 @@ brew install libimobiledevice
 idevice_id -l   # lists UDIDs of connected, trusted iPhones
 ```
 
-Put each UDID into `.env` as `FARM_PHONE1_UDID` (and so on), then start the dashboard or MCP server so it picks the values up. `get_phone_screen {phoneId}` writes a screenshot to the process's current directory via `idevicescreenshot`. Without libimobiledevice or a configured UDID, the tool answers `available: false` with the reason instead of a placeholder.
+`get_phone_screen` reads each device's `usb_udid` from the database. On a fresh database, `FARM_PHONEn_UDID` in `.env` is seeded into that column on first dashboard start; on an existing database, set it directly, for example `sqlite3 infra/db/farm.db "UPDATE farm_devices SET usb_udid='<udid>' WHERE id='phone1'"`. `get_phone_screen {phoneId}` writes a screenshot to the process's current directory via `idevicescreenshot`. Without libimobiledevice or a configured UDID, the tool answers `available: false` with the reason instead of a placeholder.
 
 ## 9. Troubleshooting
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 /* First-run overlay. Shown once, until any choice stores the
    "octagon-onboarded" flag (handled by the parent via onFinish). The demo
@@ -32,6 +32,16 @@ export function OnboardingModal({
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [demoError, setDemoError] = useState("");
 
+  // Escape dismisses, like the other modals. The dialog div is not focusable,
+  // so an onKeyDown on it would never fire.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && !loadingDemo) onFinish("dismiss");
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [loadingDemo, onFinish]);
+
   async function loadDemo() {
     setDemoError("");
     setLoadingDemo(true);
@@ -57,9 +67,6 @@ export function OnboardingModal({
         aria-label="Welcome to Octagon"
         className="w-full bg-surface border border-hairline rounded-2xl shadow-2xl overflow-hidden"
         style={{ maxWidth: 460 }}
-        onKeyDown={(e) => {
-          if (e.key === "Escape" && !loadingDemo) onFinish("dismiss");
-        }}
       >
         <div className="px-6 pt-6 pb-5">
           <div className="flex items-center gap-3">

@@ -27,6 +27,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB = process.env.FARM_DB_PATH || path.join(__dirname, "../infra/db/farm.db");
 
 function db(){ return new Database(DB, {readonly:true}); }
+// write connection: busy_timeout guards against SQLITE_BUSY while the hub and
+// its brains hold the database
+function dbw(){ const d=new Database(DB); d.pragma("busy_timeout=5000"); return d; }
 
 const TOOLS = [
   {name:"list_phones", description:"List phones registered in the local Octagon farm", inputSchema:{type:"object", properties:{}}},
@@ -70,10 +73,15 @@ function taskTitle(task){
   try{
     const p=JSON.parse(task.payload||"{}");
     const m=Number(p&&p.duration_minutes);
-    if(Number.isFinite(m)&&m>0) return `Pacing session - ${Math.round(m)} min`;
+    // Floor at 1 so a sub-minute task never shows a "0 min" title.
+    if(Number.isFinite(m)&&m>0) return `Pacing session - ${Math.max(1, Math.round(m))} min`;
   }catch{ /* fall through to the generic title */ }
   return "Pacing session";
 }
+
+// Mirrors AGENT_COLORS in apps/dashboard/lib/farmDb.ts: new agents rotate
+// through the fleet palette instead of sharing one hardcoded color.
+const AGENT_COLORS=["#529BFF", "#F59E0B", "#A78BFA", "#F97070", "#7F8B9B"];
 
 let buffer="";
 process.stdin.on("data", chunk=>{ buffer+=chunk; let idx;
@@ -99,7 +107,7 @@ function handle(msg){
         const {slot, minutes=10}=args;
         const minutesN=Math.min(Math.max(Number(minutes)||10,1),180);
         const id2=`phone${slot}`;
-        const d=new Database(DB);
+        const d=dbw();
         try{
           const exists=d.prepare("SELECT id FROM farm_devices WHERE id=?").get(id2);
           if(!exists){ text=`No device ${id2} in the local farm. Call list_phones first.`; }
@@ -130,37 +138,38 @@ function handle(msg){
         if(aname.length<2||aname.length>24) return reply(id, {content:[{type:"text", text:"name must be 2-24 characters"}], isError:true});
         if(!["phone","monitor","supervisor","custom"].includes(role)) return reply(id, {content:[{type:"text", text:"role must be one of phone, monitor, supervisor, custom"}], isError:true});
         if(role==="phone"&&!deviceId) return reply(id, {content:[{type:"text", text:"phone agents require a device_id (see list_phones)"}], isError:true});
-        const d=new Database(DB);
+        const d=dbw();
         try{
-          if(deviceId){
+          if(role==="phone"){
             const dev=d.prepare("SELECT id FROM farm_devices WHERE id=? AND active=1").get(deviceId);
             if(!dev) return reply(id, {content:[{type:"text", text:"Unknown device_id"}], isError:true});
-            if(role==="phone"){
-              const holder=d.prepare("SELECT name FROM farm_agents WHERE device_id=? AND active=1").get(deviceId);
-              if(holder) return reply(id, {content:[{type:"text", text:`device ${deviceId} already has an agent (${holder.name})`}], isError:true});
-            }
+            const holder=d.prepare("SELECT name FROM farm_agents WHERE device_id=? AND active=1").get(deviceId);
+            if(holder) return reply(id, {content:[{type:"text", text:`device ${deviceId} already has an agent (${holder.name})`}], isError:true});
           }
           const dup=d.prepare("SELECT id FROM farm_agents WHERE lower(name)=lower(?)").get(aname);
           if(dup) return reply(id, {content:[{type:"text", text:"an agent with this name already exists"}], isError:true});
           const now=new Date().toISOString();
           const aid=require("crypto").randomUUID();
-          d.prepare("INSERT INTO farm_agents (id, name, role, device_id, color, status, active, created_at, updated_at) VALUES (?, ?, ?, ?, '#529BFF', 'idle', 1, ?, ?)").run(aid, aname, role, deviceId||null, now, now);
+          const count=d.prepare("SELECT COUNT(*) AS c FROM farm_agents").get().c;
+          d.prepare("INSERT INTO farm_agents (id, name, role, device_id, color, status, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'idle', 1, ?, ?)").run(aid, aname, role, role==="phone"?deviceId:null, AGENT_COLORS[count % AGENT_COLORS.length], now, now);
           text=JSON.stringify(d.prepare("SELECT id, name, role, device_id, color, status, active, created_at, updated_at FROM farm_agents WHERE id=?").get(aid), null, 2);
         } finally { d.close(); }
       }
       else if(name==="assign_agent"){
-        const d=new Database(DB);
+        const d=dbw();
         try{
           const ag=d.prepare("SELECT id FROM farm_agents WHERE id=? AND active=1").get(args.agentId);
           if(!ag) return reply(id, {content:[{type:"text", text:"Unknown agent"}], isError:true});
           const dev=d.prepare("SELECT id FROM farm_devices WHERE id=? AND active=1").get(args.deviceId);
           if(!dev) return reply(id, {content:[{type:"text", text:"Unknown device_id"}], isError:true});
+          const holder=d.prepare("SELECT name FROM farm_agents WHERE device_id=? AND active=1 AND id != ?").get(args.deviceId, args.agentId);
+          if(holder) return reply(id, {content:[{type:"text", text:`device ${args.deviceId} already has an agent (${holder.name})`}], isError:true});
           d.prepare("UPDATE farm_agents SET device_id=?, updated_at=? WHERE id=? AND active=1").run(args.deviceId, new Date().toISOString(), args.agentId);
           text=JSON.stringify(d.prepare("SELECT id, name, role, device_id, status FROM farm_agents WHERE id=?").get(args.agentId), null, 2);
         } finally { d.close(); }
       }
       else if(name==="handoff_task"){
-        const d=new Database(DB);
+        const d=dbw();
         try{
           const target=d.prepare("SELECT id, name, role, device_id FROM farm_agents WHERE id=? AND active=1").get(args.toAgentId);
           if(!target) return reply(id, {content:[{type:"text", text:"Unknown agent"}], isError:true});
@@ -172,7 +181,13 @@ function handle(msg){
           const fromName=owner?owner.name:(task.device_id||"unassigned");
           const now=new Date().toISOString();
           const title=taskTitle(task);
-          d.prepare("UPDATE farm_tasks SET device_id=?, updated_at=? WHERE id=?").run(target.device_id, now, args.taskId);
+          // Stamp the moved task's payload with the handoff metadata, exactly
+          // like the dashboard's POST /api/agents/handoff does, keeping the
+          // payload's other keys.
+          let payload={};
+          try{ payload=JSON.parse(task.payload||"{}")||{}; }catch{ payload={}; }
+          payload.handoff={to:target.id, at:now};
+          d.prepare("UPDATE farm_tasks SET device_id=?, payload=?, updated_at=? WHERE id=?").run(target.device_id, JSON.stringify(payload), now, args.taskId);
           const note=args.note?String(args.note).trim():"";
           const eventText=`Handoff: ${fromName} handed '${title}' to ${target.name}`+(note?` - ${note}`:"");
           d.prepare("INSERT INTO farm_events (id, ts, level, device_id, task_id, event, data) VALUES (?, ?, 'info', ?, ?, ?, ?)").run(require("crypto").randomUUID(), now, target.device_id, args.taskId, eventText, JSON.stringify({agentId:target.id, kind:"handoff"}));

@@ -4,11 +4,12 @@ One Mac, one SQLite file, real iPhones driven by spoken cues. This document desc
 
 ```
 apps/dashboard (Next.js, port 3010)
-  app/api/farm/*  -->  lib/farmDb.ts  -->  SQLite: infra/db/farm.db
+  app/api/farm/*, app/api/agents/*  -->  lib/farmDb.ts  -->  SQLite: infra/db/farm.db
                                               farm_devices
                                               farm_device_health
                                               farm_tasks
                                               farm_events
+                                              farm_agents
                                               hub_status
                                                      ^        ^
 infra/farm/hub.js --forks--> infra/farm/farm-brain.js         |
@@ -21,7 +22,7 @@ infra/farm/hub.js --forks--> infra/farm/farm-brain.js         |
   |                    (events + health land in the DB) -------+
   |
 mcp/server.js (stdio) --reads/writes the same DB--> farm_devices, farm_device_health,
-                                                    farm_tasks, farm_events
+                                                    farm_tasks, farm_events, farm_agents
 
 scripts/seed-demo.js -- resets the DB and fills it with synthetic demo data
 ```
@@ -35,6 +36,7 @@ Routes:
 - `/api/farm` and `/api/farm/devices` - devices plus their health rows.
 - `/api/farm/events` - `GET` lists recent events (filter by `phoneId`); `POST` is the chat brain (below).
 - `/api/farm/tasks` and `/api/farm/tasks/[id]` - scheduled and finished tasks.
+- `/api/farm/summary` - `GET` overview tiles for a time window (`hours`, clamped to 1..168, default 24): device, session and swipe counters, success rate, average cycle time, the queue, and recent events.
 - `/api/agents`, `/api/agents/[id]` and `/api/agents/handoff` - the farm's named agents (supervisor, monitor, one per phone) and task handoffs between them.
 - `/api/farm/demo` - seeds a fresh database with the same synthetic demo transcript as `scripts/seed-demo.js` (409 if the database is not empty).
 - `/api/health` - liveness.
@@ -45,12 +47,33 @@ Auth: none. Octagon is local-only open-source software - download it, open http:
 
 Rule-based, in `app/api/farm/events/route.ts`. It stores the user message as an event, acts on what it recognizes, and stores its reply as another event:
 
-- A message addressed with `@<name>` (for example `@Nova status`) is answered by that agent; anything else is answered by the supervisor "Nova". The reply event's `data` carries `{"side":"agent","agentId":...,"agentName":...}`.
+- A message addressed with `@<name>` (for example `@Nova status`) is answered by that agent; anything else is answered by the supervisor "Nova" (full rules in the Agents section below). The reply event's `data` carries `{"side":"agent","agentId":...,"agentName":...}`.
 - `run <minutes>` (also "start", "session", "pace") - inserts a `session` row into `farm_tasks`, capped at 180 minutes.
 - `status` / `health` / `report` - reads `farm_device_health` for the open phone. A supervisor or monitor asked for status without a device answers with an aggregate of all devices (the monitor adds the queued task count).
 - `stop` / `cancel` - sets all `scheduled`/`running` tasks to `canceled`.
 - Wording about posting, uploading, or publishing - an explicit "not implemented" reply. The roadmap is mentioned; nothing is executed.
 - Anything else - a reply that the message was only logged, listing what it can act on.
+
+## Agents (the multi-agent layer)
+
+The farm is staffed by named agents stored in `farm_agents` (columns in the data model below). A fresh database is seeded once, when the table is empty, with the supervisor **Nova**, the monitor **Sentry**, and one `<Prefix> Agent` per registered device. The MCP tools `list_agents`, `create_agent`, `assign_agent` and `handoff_task` operate on the same rows as the dashboard routes.
+
+Routes (JSON, `success` plus payload or `error`):
+
+- `GET /api/agents` - the active agents, oldest first.
+- `POST /api/agents` - creates an agent: `name` (2-24 characters, unique case-insensitively) and `role` (`phone`, `monitor`, `supervisor`, `custom`). A `phone` agent requires an existing `device_id`, and a device can hold only one phone agent.
+- `PATCH /api/agents/[id]` - renames an agent, moves it to another device, or retires it (`active: 0`; the row stays in the database, the agent leaves roster and chat).
+- `POST /api/agents/handoff` - task handoffs (below).
+
+Routing rules in the chat (implemented in `app/api/farm/events/route.ts`):
+
+- A message starting with `@<name>` is answered by that agent; longest name wins, so `@Alpha Agent` is not swallowed by a shorter agent name. Anything else is answered by the supervisor.
+- Monitor and supervisor coordinate but do not execute: asked for `status` without a device they answer with a fleet-wide aggregate, and the monitor adds the queued task count because watching the queue is its job.
+
+Task handoffs:
+
+- `POST /api/agents/handoff` with `{taskId, toAgentId, note?}`, and the MCP tool `handoff_task`, move a task to the target phone agent's device, stamp the task payload with `handoff: {to, at}`, and log a `Handoff: <from> handed '<task title>' to <to>` event (`data` carries `kind: "handoff"`) that the chat renders as its own card.
+- Handing a task to a monitor or supervisor agent, or to a phone agent without a device, is refused with an explicit reason; the task stays where it was.
 
 ## Data model (infra/db/farm.db)
 
@@ -86,7 +109,7 @@ Schema is created by `lib/farmDb.ts` (dashboard), `scripts/seed-demo.js`, or at 
 
 ## MCP server (mcp/server.js)
 
-JSON-RPC over stdio, no network listener. Opens the same SQLite file read-only, except `run_session`, which inserts a `scheduled` `session` task. Tools: `list_phones`, `get_phone`, `run_session`, `get_events`, `get_phone_screen`. `get_phone_screen` looks up `usb_udid`, checks for `idevicescreenshot`, and returns an explicit `available: false` with a reason when capture is not possible. Details and client config: [mcp/README.md](../mcp/README.md).
+JSON-RPC over stdio, no network listener. Opens the same SQLite file, read-only except for the writing tools. Nine tools: `list_phones`, `get_phone`, `run_session`, `get_events`, `get_phone_screen`, `list_agents`, `create_agent`, `assign_agent`, `handoff_task`. `run_session` inserts a `scheduled` `session` task; `create_agent`, `assign_agent` and `handoff_task` write `farm_agents`, `farm_tasks` and `farm_events`, mirroring the dashboard's agent routes. `get_phone_screen` looks up `usb_udid`, checks for `idevicescreenshot`, and returns an explicit `available: false` with a reason when capture is not possible. Details and client config: [mcp/README.md](../mcp/README.md).
 
 ## Behavior contract
 

@@ -289,6 +289,15 @@ function DetailRow({
   );
 }
 
+// Muted pill naming an agent's role in the handoff picker.
+function RoleChip({ role }: { role: string }) {
+  return (
+    <span className="shrink-0 rounded-full border border-hairline bg-raised px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wide text-ink-mute">
+      {role}
+    </span>
+  );
+}
+
 export default function FleetDashboard() {
   const router = useRouter();
 
@@ -336,6 +345,9 @@ export default function FleetDashboard() {
   const [cancelTarget, setCancelTarget] = useState<SummaryQueueItem | null>(null);
   const [cancelError, setCancelError] = useState("");
   const [canceling, setCanceling] = useState(false);
+  const [handoffTarget, setHandoffTarget] = useState<SummaryQueueItem | null>(null);
+  const [handoffError, setHandoffError] = useState("");
+  const [handoffBusy, setHandoffBusy] = useState(false);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const rangeRef = useRef<RangeHours>(range);
@@ -582,6 +594,12 @@ export default function FleetDashboard() {
   const queue: SummaryQueueItem[] = summary?.queue ?? [];
   const events: SummaryEvent[] = summary?.recentEvents ?? [];
 
+  // Handoff candidates: active agents on a different device than the task's
+  // current one ("Any" matches nothing, so unassigned tasks exclude nobody).
+  const handoffCandidates = handoffTarget
+    ? agents.filter((a) => a.device_id !== handoffTarget.device)
+    : [];
+
   function openSession(deviceId?: string) {
     const target = deviceId ?? sel ?? devices[0]?.id ?? "";
     setSessionDeviceId(target);
@@ -658,6 +676,7 @@ export default function FleetDashboard() {
   }
 
   async function addDevice() {
+    if (adding) return; // Enter in the input bypasses the disabled button.
     const p = addPrefix.trim();
     if (p.length < 2 || p.length > 20) {
       setAddError("Prefix must be 2 to 20 characters.");
@@ -707,6 +726,31 @@ export default function FleetDashboard() {
       setCancelError("Could not cancel the task. The farm API is unreachable.");
     }
     setCanceling(false);
+  }
+
+  async function confirmHandoff(toAgentId: string) {
+    if (!handoffTarget) return;
+    setHandoffError("");
+    setHandoffBusy(true);
+    try {
+      const res = await fetch("/api/agents/handoff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId: handoffTarget.id, toAgentId }),
+      });
+      const j = await res.json().catch(() => null);
+      if (res.ok && j?.success) {
+        setHandoffTarget(null);
+        loadSummary(rangeRef.current);
+      } else {
+        // Honest refusal (monitor/supervisor agents, missing device, ...) is
+        // shown as-is so the queue explains why nothing moved.
+        setHandoffError(String(j?.error || `Could not hand off the task (HTTP ${res.status}).`));
+      }
+    } catch {
+      setHandoffError("Could not hand off the task. The farm API is unreachable.");
+    }
+    setHandoffBusy(false);
   }
 
   function retry() {
@@ -1133,6 +1177,17 @@ export default function FleetDashboard() {
                               >
                                 Open conversation
                               </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMenuFor(null);
+                                  setHandoffError("");
+                                  setHandoffTarget(t);
+                                }}
+                                className="block w-full px-3 py-2 text-left text-[13px] text-ink-dim transition-colors hover:bg-hover hover:text-ink"
+                              >
+                                Handoff to agent...
+                              </button>
                               {cancellable && (
                                 <button
                                   type="button"
@@ -1556,6 +1611,47 @@ export default function FleetDashboard() {
                 {canceling ? "Canceling" : "Cancel task"}
               </button>
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {handoffTarget && (
+        <Modal
+          title="Handoff to agent"
+          onClose={() => {
+            setHandoffTarget(null);
+            setHandoffError("");
+          }}
+          maxWidth={380}
+        >
+          <div className="p-4">
+            <p className="text-[13px] leading-relaxed text-ink-dim">
+              {`Hand "${handoffTarget.title || "this session"}" to another agent. It will run on that agent's device.`}
+            </p>
+            <div className="mt-3 space-y-1.5">
+              {handoffCandidates.length === 0 && (
+                <p className="text-[12px] text-ink-mute">
+                  No other active agent to hand this task to.
+                </p>
+              )}
+              {handoffCandidates.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => confirmHandoff(a.id)}
+                  disabled={handoffBusy}
+                  className="flex w-full items-center justify-between gap-2 rounded-control border border-hairline bg-surface px-3 py-2 text-left text-[13px] transition-colors hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <span className="truncate font-medium text-ink">{a.name}</span>
+                  <RoleChip role={a.role} />
+                </button>
+              ))}
+            </div>
+            {handoffError && (
+              <p role="alert" className="mt-3 text-[12px] text-danger">
+                {handoffError}
+              </p>
+            )}
           </div>
         </Modal>
       )}

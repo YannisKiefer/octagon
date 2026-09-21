@@ -37,14 +37,21 @@ export function UpdateBanner() {
       if (payload.phase === "install") { setPhase("installing"); }
       if (payload.phase === "relaunch") { setPhase("relaunching"); }
     });
-    const result = await bridge.installUpdate();
-    if (!result.ok) {
-      setError(result.error || "The update could not be installed.");
-      setPhase("error");
-      return;
-    }
-    if (!result.relaunching) {
-      setError(result.note || "Drag Octagon to Applications to finish the update.");
+    // The bridge is IPC and can reject; without this the banner would stick
+    // on "Downloading" forever.
+    try {
+      const result = await bridge.installUpdate();
+      if (!result.ok) {
+        setError(result.error || "The update could not be installed.");
+        setPhase("error");
+        return;
+      }
+      if (!result.relaunching) {
+        setError(result.note || "Drag Octagon to Applications to finish the update.");
+        setPhase("error");
+      }
+    } catch {
+      setError("The update could not be installed.");
       setPhase("error");
     }
   }, [bridge]);
